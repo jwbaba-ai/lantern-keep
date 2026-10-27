@@ -1,0 +1,7 @@
+.env
+*.env
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+__pycache__/
+tools/out/

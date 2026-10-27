@@ -1,0 +1,12 @@
+{
+  "wave": 4,
+  "base_health_pct": 100,
+  "breached_lane": null,
+  "revives": 0,
+  "players": [
+    { "role": "tank", "damage": 2100, "deaths": 0 },
+    { "role": "archer", "damage": 5200, "deaths": 0 },
+    { "role": "healer", "damage": 300, "deaths": 0 }
+  ],
+  "previous_wave": { "tactic": "flank", "event": "fog" }
+}

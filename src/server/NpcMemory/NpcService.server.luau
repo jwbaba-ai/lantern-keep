@@ -94,6 +94,13 @@ local function loadForMatch()
 	if storeOk and store ~= nil then
 		savedCache = MemoryStore.load(store, MemoryStore.partyKey(matchIds))
 	end
+	local eventCount = 0
+	if savedCache and savedCache.events then
+		eventCount = #savedCache.events
+	end
+	local hasLines = savedCache and savedCache.bram_lines ~= nil and savedCache.mira_lines ~= nil
+	-- 대사 원문은 찍지 않는다.
+	print(string.format("[Npc] loaded events=%d lines=%s", eventCount, hasLines and "ai" or "default"))
 end
 
 local function ensureLoaded()

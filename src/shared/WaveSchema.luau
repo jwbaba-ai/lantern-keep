@@ -7,7 +7,7 @@ return {
 	["properties"] = {
 		["wave_name"] = {
 			["type"] = "string",
-			["description"] = "Short dramatic name shown to players",
+			["description"] = "Short dramatic wave name shown to players",
 		},
 		["enemies"] = {
 			["type"] = "array",
@@ -18,7 +18,7 @@ return {
 				["properties"] = {
 					["type"] = {
 						["type"] = "string",
-						["enum"] = { "Grunt", "Archer", "Brute", "Healer" },
+						["enum"] = { "Grunt", "Runner", "Brute", "Archer", "Shaman" },
 					},
 					["count"] = {
 						["type"] = "integer",
@@ -36,11 +36,11 @@ return {
 		},
 		["event"] = {
 			["type"] = "string",
-			["enum"] = { "none", "fog", "elite_spawn", "reinforcement_delay" },
+			["enum"] = { "none", "fog", "elite_spawn", "reinforcement_delay", "blood_moon" },
 		},
 		["director_note"] = {
 			["type"] = "string",
-			["description"] = "One sentence explaining why this wave fits the team",
+			["description"] = "One short sentence a player could read, explaining the twist",
 		},
 	},
 }

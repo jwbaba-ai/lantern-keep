@@ -1,13 +1,12 @@
 {
-  "name": "roblox-ai-director",
+  "name": "lantern-keep",
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
       "Shared": { "$path": "src/shared" }
     },
     "ServerScriptService": {
-      "Director": { "$path": "src/server/Director" },
-      "NpcMemory": { "$path": "src/server/NpcMemory" }
+      "Server": { "$path": "src/server" }
     }
   }
 }

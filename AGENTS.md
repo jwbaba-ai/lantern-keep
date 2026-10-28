@@ -46,11 +46,17 @@ Muse Code(주력)는 이 파일을, Claude Code(리뷰)는 CLAUDE.md(→ 이 파
 - **저장소는 공개된다.** 회사 자료, 비공개 게임 코드, 키, 개인정보를 넣지 않는다.
 - 데모(3분 영상)는 해커톤 기간에 새로 만든 기능만 보여 준다.
 
-## 게임 정보 (TODO: Babazz가 채움)
-- 적 종류: TODO
-- 레인/방어선 구조: TODO
-- 직업(역할): TODO
-- 현재 웨이브 생성 방식: TODO
+## 게임 정보: Lantern Keep (등불 성채)
+상세 기획은 `docs/GAME_DESIGN.md`가 단일 기준이다. 요약:
+- 1~4인 협동. 성채 중앙의 **등불(Lantern)**을 7웨이브 동안 지킨다. 등불 체력 0이면 패배.
+- 성문(레인): `north`, `south`, `east`, `west`
+- 직업: guardian(탱커), ranger(원거리), cleric(치유·부활), arcanist(범위 마법)
+- 적: Grunt(기본), Runner(빠름), Brute(단단함·성문 피해 큼), Archer(원거리), Shaman(적 치유)
+- 전술: focus_weak_lane, split_push, flank, siege
+- 이벤트: none, fog, elite_spawn, reinforcement_delay, blood_moon(6웨이브 이상)
+- 웨이브 흐름: 웨이브 종료 → 대기(Intermission) 시작과 동시에 디렉터 요청 → 검증 통과 시 적용, 실패 시 대체 웨이브
+- NPC 동료: 노장 대장 Bram(전투를 기억), 견습 치유사 Mira(플레이어 개인을 기억)
+- 이 게임은 **해커톤 기간에 새로 만든다.** 기존 게임 코드를 가져오지 않는다.
 
 ## 작업 방식
 - 작업 시작 전 이 파일과 `docs/devlog/`의 최근 기록을 읽는다.

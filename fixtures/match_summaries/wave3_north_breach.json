@@ -1,11 +1,22 @@
 {
   "wave": 3,
-  "base_health_pct": 46,
+  "lantern_health_pct": 46,
   "breached_lane": "north",
   "revives": 2,
   "players": [
-    { "role": "tank", "damage": 1200, "deaths": 1 },
-    { "role": "archer", "damage": 3400, "deaths": 0 }
+    {
+      "role": "guardian",
+      "damage": 1200,
+      "deaths": 1
+    },
+    {
+      "role": "ranger",
+      "damage": 3400,
+      "deaths": 0
+    }
   ],
-  "previous_wave": { "tactic": "split_push", "event": "none" }
+  "previous_wave": {
+    "tactic": "split_push",
+    "event": "none"
+  }
 }

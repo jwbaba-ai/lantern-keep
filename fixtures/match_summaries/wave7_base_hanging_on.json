@@ -1,12 +1,27 @@
 {
   "wave": 7,
-  "base_health_pct": 10,
+  "lantern_health_pct": 10,
   "breached_lane": "west",
   "revives": 4,
   "players": [
-    { "role": "tank", "damage": 900, "deaths": 2 },
-    { "role": "archer", "damage": 2700, "deaths": 1 },
-    { "role": "healer", "damage": 200, "deaths": 1 }
+    {
+      "role": "guardian",
+      "damage": 900,
+      "deaths": 2
+    },
+    {
+      "role": "ranger",
+      "damage": 2700,
+      "deaths": 1
+    },
+    {
+      "role": "cleric",
+      "damage": 200,
+      "deaths": 1
+    }
   ],
-  "previous_wave": { "tactic": "siege", "event": "elite_spawn" }
+  "previous_wave": {
+    "tactic": "siege",
+    "event": "elite_spawn"
+  }
 }

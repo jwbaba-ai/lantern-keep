@@ -29,11 +29,11 @@ return {
 	{
 		wave_name = "Arrows in the Dark",
 		enemies = {
-			{ type = "Grunt", count = 4, lane = "north" },
+			{ type = "Grunt", count = 3, lane = "north" },
 			{ type = "Grunt", count = 2, lane = "south" },
 			{ type = "Brute", count = 1, lane = "south" },
 			{ type = "Archer", count = 3, lane = "east" },
-			{ type = "Runner", count = 3, lane = "west" },
+			{ type = "Runner", count = 2, lane = "west" },
 		},
 		tactic = "focus_weak_lane",
 		event = "fog",
@@ -42,9 +42,9 @@ return {
 	{
 		wave_name = "Hammer and Howl",
 		enemies = {
-			{ type = "Grunt", count = 5, lane = "north" },
+			{ type = "Grunt", count = 4, lane = "north" },
 			{ type = "Brute", count = 1, lane = "north" },
-			{ type = "Runner", count = 4, lane = "south" },
+			{ type = "Runner", count = 3, lane = "south" },
 			{ type = "Grunt", count = 3, lane = "east" },
 			{ type = "Archer", count = 2, lane = "west" },
 			{ type = "Shaman", count = 1, lane = "west" },
@@ -56,12 +56,12 @@ return {
 	{
 		wave_name = "The Shaman's Tithe",
 		enemies = {
-			{ type = "Grunt", count = 5, lane = "north" },
+			{ type = "Grunt", count = 4, lane = "north" },
 			{ type = "Brute", count = 1, lane = "north" },
-			{ type = "Runner", count = 5, lane = "south" },
+			{ type = "Runner", count = 4, lane = "south" },
 			{ type = "Archer", count = 3, lane = "east" },
 			{ type = "Shaman", count = 1, lane = "east" },
-			{ type = "Grunt", count = 4, lane = "west" },
+			{ type = "Grunt", count = 3, lane = "west" },
 		},
 		tactic = "flank",
 		event = "elite_spawn",
@@ -70,11 +70,11 @@ return {
 	{
 		wave_name = "Ashen Tide",
 		enemies = {
-			{ type = "Grunt", count = 6, lane = "north" },
+			{ type = "Grunt", count = 5, lane = "north" },
 			{ type = "Brute", count = 1, lane = "north" },
-			{ type = "Runner", count = 6, lane = "south" },
+			{ type = "Runner", count = 5, lane = "south" },
 			{ type = "Archer", count = 4, lane = "east" },
-			{ type = "Grunt", count = 4, lane = "west" },
+			{ type = "Grunt", count = 3, lane = "west" },
 			{ type = "Shaman", count = 1, lane = "west" },
 		},
 		tactic = "split_push",
@@ -84,12 +84,12 @@ return {
 	{
 		wave_name = "Last Night of the Keep",
 		enemies = {
-			{ type = "Grunt", count = 7, lane = "north" },
+			{ type = "Grunt", count = 6, lane = "north" },
 			{ type = "Brute", count = 1, lane = "north" },
-			{ type = "Runner", count = 7, lane = "south" },
-			{ type = "Archer", count = 4, lane = "east" },
+			{ type = "Runner", count = 6, lane = "south" },
+			{ type = "Archer", count = 3, lane = "east" },
 			{ type = "Shaman", count = 1, lane = "east" },
-			{ type = "Grunt", count = 6, lane = "west" },
+			{ type = "Grunt", count = 5, lane = "west" },
 		},
 		tactic = "siege",
 		event = "elite_spawn",

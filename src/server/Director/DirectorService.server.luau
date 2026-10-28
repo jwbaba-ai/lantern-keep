@@ -5,6 +5,7 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
@@ -13,6 +14,7 @@ local FallbackWaves = require(Shared:WaitForChild("FallbackWaves"))
 local DirectorFolder = script.Parent
 local DirectorClient = require(DirectorFolder:WaitForChild("DirectorClient"))
 local WaveValidator = require(DirectorFolder:WaitForChild("WaveValidator"))
+local DirectorState = require(DirectorFolder:WaitForChild("DirectorState"))
 local PartyScale = require(DirectorFolder:WaitForChild("PartyScale"))
 local MatchStats = require(DirectorFolder:WaitForChild("MatchStats"))
 local EnemyFactory = require(DirectorFolder.Parent:WaitForChild("Enemies"):WaitForChild("EnemyFactory"))
@@ -40,15 +42,9 @@ local function logPlan(wave, source, plan)
 	))
 end
 
-local function setDirectorState(state, wave, source, plan)
-	local ok, json = pcall(HttpService.JSONEncode, HttpService, {
-		wave = wave,
-		source = source,
-		plan = plan,
-	})
-	if ok then
-		state.Value = json
-	end
+-- 대기 종료 시각 (workspace:GetServerTimeNow() 기준, 전투 중에는 0).
+local function intermissionEndsAt(secondsLeft)
+	return Workspace:GetServerTimeNow() + math.max(0, secondsLeft)
 end
 
 local function getWaypoints(map, lane)
@@ -162,7 +158,15 @@ for wave = 1, Config.TotalWaves do
 		scaledTotal
 	))
 	logPlan(wave, currentSource, playPlan)
-	setDirectorState(state, wave, currentSource, playPlan)
+	DirectorState.publish(state, {
+		phase = "wave",
+		displayWave = wave,
+		source = currentSource,
+		plan = playPlan,
+		waveName = playPlan.wave_name,
+		directorNote = playPlan.director_note,
+		intermissionEndsAt = 0,
+	})
 
 	local tracker = playWave(map, lantern, wave, playPlan)
 	wavesCompleted = wave
@@ -191,6 +195,16 @@ for wave = 1, Config.TotalWaves do
 		print("[MatchStats] " .. summaryJson)
 	end
 	local started = os.clock()
+	-- 대기 시작 직후 (디렉터 응답 전): 다음 웨이브는 설계 중 문구로 알린다.
+	DirectorState.publish(state, {
+		phase = "intermission",
+		displayWave = wave + 1,
+		source = "pending",
+		plan = nil,
+		waveName = nil,
+		directorNote = nil,
+		intermissionEndsAt = intermissionEndsAt(Config.IntermissionSeconds),
+	})
 	local nextPlan = FallbackWaves[wave + 1]
 	local nextSource = "fallback"
 	local requested = DirectorClient.requestNextWave(summary)
@@ -210,6 +224,16 @@ for wave = 1, Config.TotalWaves do
 	currentSource = nextSource
 
 	local rest = Config.IntermissionSeconds - (os.clock() - started)
+	-- 디렉터 응답 또는 대체 웨이브 확정: 다음 웨이브 정보로 갱신한다.
+	DirectorState.publish(state, {
+		phase = "intermission",
+		displayWave = wave + 1,
+		source = nextSource,
+		plan = nextPlan,
+		waveName = nextPlan.wave_name,
+		directorNote = nextPlan.director_note,
+		intermissionEndsAt = intermissionEndsAt(rest),
+	})
 	if rest > 0 then
 		task.wait(rest)
 	end

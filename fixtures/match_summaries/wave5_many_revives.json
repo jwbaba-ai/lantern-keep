@@ -1,0 +1,12 @@
+{
+  "wave": 5,
+  "base_health_pct": 55,
+  "breached_lane": null,
+  "revives": 6,
+  "players": [
+    { "role": "tank", "damage": 1100, "deaths": 3 },
+    { "role": "archer", "damage": 3100, "deaths": 2 },
+    { "role": "healer", "damage": 150, "deaths": 1 }
+  ],
+  "previous_wave": { "tactic": "split_push", "event": "fog" }
+}

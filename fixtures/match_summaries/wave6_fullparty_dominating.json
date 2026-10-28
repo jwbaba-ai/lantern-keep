@@ -1,0 +1,13 @@
+{
+  "wave": 6,
+  "base_health_pct": 100,
+  "breached_lane": null,
+  "revives": 0,
+  "players": [
+    { "role": "tank", "damage": 2600, "deaths": 0 },
+    { "role": "archer", "damage": 5800, "deaths": 0 },
+    { "role": "healer", "damage": 400, "deaths": 0 },
+    { "role": "archer", "damage": 5400, "deaths": 0 }
+  ],
+  "previous_wave": { "tactic": "split_push", "event": "elite_spawn" }
+}

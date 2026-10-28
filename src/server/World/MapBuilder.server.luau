@@ -37,6 +37,39 @@ local function laneDirection(lane)
 	end
 end
 
+-- 성문 방향 이름표 (고정 문구라 필터 없음).
+-- 배너의 성문 표기(북문·남문·동문·서문)와 같은 이름 + 영문 약자를 함께 쓴다.
+local GATE_LABEL = {
+	north = "북문 N",
+	south = "남문 S",
+	east = "동문 E",
+	west = "서문 W",
+}
+
+local function addGateLabel(gate, lane)
+	if gate:FindFirstChild("GateLabel") then
+		return
+	end
+	local tag = Instance.new("BillboardGui")
+	tag.Name = "GateLabel"
+	tag.Adornee = gate
+	tag.Size = UDim2.fromScale(10, 3)
+	tag.StudsOffsetWorldSpace = Vector3.new(0, 9, 0)
+	tag.MaxDistance = 250
+	tag.AlwaysOnTop = false
+	tag.Parent = gate
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.new(1, 0, 1, 0)
+	text.BackgroundTransparency = 1
+	text.TextScaled = true
+	text.Font = Enum.Font.GothamBold
+	text.Text = GATE_LABEL[lane]
+	text.TextColor3 = BrickColor.new(GATE_COLORS[lane]).Color
+	text.TextStrokeColor3 = Color3.new(0, 0, 0)
+	text.TextStrokeTransparency = 0
+	text.Parent = tag
+end
+
 local function buildMap()
 	local map = Instance.new("Folder")
 	map.Name = "Map"
@@ -80,6 +113,7 @@ local function buildMap()
 			BrickColor = BrickColor.new(GATE_COLORS[lane]),
 		})
 		gate.Parent = gates
+		addGateLabel(gate, lane)
 
 		-- 스폰 지점 (납작한 패드)
 		local pad = makePart({
@@ -117,6 +151,16 @@ end
 local map = workspace:FindFirstChild("Map")
 if not map then
 	map = buildMap()
+end
+-- 이미 저장된 맵에도 이름표가 없으면 붙인다.
+local gatesFolder = map:FindFirstChild("Gates")
+if gatesFolder then
+	for _, lane in ipairs(Config.Lanes) do
+		local gate = gatesFolder:FindFirstChild(lane)
+		if gate then
+			addGateLabel(gate, lane)
+		end
+	end
 end
 map:SetAttribute("Ready", true)
 print("[Map] ready: lantern=" .. Config.LanternMaxHealth .. " gates=4 spawns=4 lanes=4")

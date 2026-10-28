@@ -86,3 +86,7 @@ Wide banner art: a stone fortress on a hill under a huge blood-red moon, crimson
 ```text
 Game key art: four small hero silhouettes (a shield guardian, a bow ranger, a staff cleric, a robed arcanist) standing on fortress walls around a tall glowing lantern pillar, beside them an elderly bearded captain and a young healer girl in a green cloak, enemy shadows approaching from the dark below. Storybook-style fantasy painting, soft painterly brushwork, warm lantern glow against dark blue night. Square composition. No text, no letters, no numbers, no watermark, no logo.
 ```
+
+## thumbnail_16x9.png
+
+새로 생성하지 않았다. 2026-10-29 Claude Code가 `thumbnail.png`(1024×1024)를 Roblox 썸네일 권장 비율(16:9)에 맞춰 1920×1080으로 다시 배치했다. 가운데에 원본을 1080×1080으로 두고, 양옆은 같은 그림을 키워 어둡게 깔았다(System.Drawing). 체험 썸네일 업로드용이다.

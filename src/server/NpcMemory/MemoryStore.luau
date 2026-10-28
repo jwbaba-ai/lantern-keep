@@ -122,16 +122,17 @@ end
 -- 경기 종료 처리.
 -- 1. 이번 경기 기록(event)을 events에 추가한다.
 -- 2. summarizeFn(previous, events)로 Muse Spark를 1회 호출한다.
---    previous는 { bram_memory, mira_memory }(첫 판이면 비어 있음).
+--    previous는 { bram_memory, mira_memory }(첫 판이면 둘 다 ""임).
 -- 3. 검증 실패하면 이전 기억과 대사를 유지한다.
 -- 돌려값: saved, source("muse"|"fallback").
 function MemoryStore.finishMatch(saved, event, partySize, summarizeFn)
 	saved = saved or {}
 	MemoryStore.pushEvent(saved, event)
 	local source = "fallback"
+	-- 기억이 없는 첫 판에도 previous는 빈 문자열 테이블로 보낸다 ([] 아님).
 	local ok, res = pcall(summarizeFn, {
-		bram_memory = saved.bram_memory,
-		mira_memory = saved.mira_memory,
+		bram_memory = saved.bram_memory or "",
+		mira_memory = saved.mira_memory or "",
 	}, saved.events)
 	if ok and res ~= nil then
 		local valid, errs = MemoryStore.validate(res, partySize)

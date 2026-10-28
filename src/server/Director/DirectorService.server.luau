@@ -1,7 +1,7 @@
 -- 경기 흐름 (단일 기준: docs/GAME_DESIGN.md 한 판의 흐름).
 -- 웨이브 1~TotalWaves 반복: 진행 -> 종료 -> 요약 -> 대기 시작과 동시에 다음 웨이브 요청.
 -- 통과한 계획은 적용하고, 실패(nil·검증 실패)하면 FallbackWaves를 쓴다. 경기는 절대 멈추지 않는다.
--- 이벤트는 2일차에 Output 로그만 남긴다 (효과는 4일차).
+-- 웨이브 시작·대기 상태를 DirectorState(JSON)로 알리고, 이벤트 효과는 EventEffects가 적용·복원한다.
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

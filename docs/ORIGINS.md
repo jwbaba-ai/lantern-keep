@@ -6,3 +6,6 @@
 |---|---|---|---|
 | (예) src/server/Director/ | 신규 | 해커톤 기간 작성 | 2026-10-27 |
 | assets/images/*.png | 신규 | Muse Image로 해커톤 기간 생성 | 2026-11-01 |
+| assets/images/portrait_warlord.png | 신규 | Muse Image로 해커톤 기간 생성 (보스 초상화) | day8 |
+| assets/images/banner_boss.png | 신규 | Muse Image로 해커톤 기간 생성 (보스 배너) | day8 |
+| assets/images/icon.png | 신규 | Muse Image로 해커톤 기간 생성 (체험 아이콘, 게임 코드에서 미사용) | day8 |

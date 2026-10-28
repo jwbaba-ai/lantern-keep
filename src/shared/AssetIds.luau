@@ -11,6 +11,9 @@ local AssetIds = {
 	BannerElite = 113715700585490,
 	BannerReinforcement = 106938877540303,
 	BannerBloodMoon = 138826760998553,
+	-- day8 보스·아이콘 (사람이 크리에이터 허브에 올린 뒤 ID를 채운다. 0이면 글자만).
+	PortraitWarlord = 0,
+	BannerBoss = 0,
 }
 
 -- id가 0이면 그림을 숨기라는 뜻: nil을 돌려준다.

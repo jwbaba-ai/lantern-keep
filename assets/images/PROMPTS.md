@@ -90,3 +90,45 @@ Game key art: four small hero silhouettes (a shield guardian, a bow ranger, a st
 ## thumbnail_16x9.png
 
 새로 생성하지 않았다. 2026-10-29 Claude Code가 `thumbnail.png`(1024×1024)를 Roblox 썸네일 권장 비율(16:9)에 맞춰 1920×1080으로 다시 배치했다. 가운데에 원본을 1080×1080으로 두고, 양옆은 같은 그림을 키워 어둡게 깔았다(System.Drawing). 체험 썸네일 업로드용이다.
+
+---
+
+# 이미지 생성 기록 (day8 6-1단계, 날짜는 devlog 참고)
+
+공통 화풍: 위와 같다(따뜻한 등불 빛, 어두운 판타지 성채, 그림책 같은 페인팅, 글자 없음).
+모든 그림은 오리지널 창작이며 실제 인물·상표·기존 게임 캐릭터를 닮게 그리지 않았다.
+이미지당 생성 1회, 다시 만들기 0회 (위 다시 만들기 기준 중 해당하는 것이 없음).
+
+참고: 생성 도구가 1920×1280 고정 크기로 내놓으므로, PC에서 첫 결과를 그대로
+가공만 했다 (초상화·아이콘 중앙 정사각형 크롭 후 512×512, 배너 긴 변 1024로 축소해 1024×683).
+재생성이 아닌 크기 맞추기이며, 최종 크기는 아래 표와 같다.
+
+| 파일 | 최종 크기 | 생성 횟수 | 다시 만들기 사유 |
+|---|---|---|---|
+| portrait_warlord.png | 512×512 | 1 | 없음 (첫 결과 채택) |
+| banner_boss.png | 1024×683 | 1 | 없음 (첫 결과 채택) |
+| icon.png | 512×512 | 1 | 없음 (첫 결과 채택, 게임 코드에서 쓰지 않고 체험 아이콘으로 등록) |
+
+## portrait_warlord.png
+
+보스 "그림자 군주": 검은 갑옷과 뿔 달린 투구, 붉게 빛나는 눈, 상반신.
+
+```text
+Upper-body portrait of the Shadow Warlord, an original dark fantasy boss villain: black plate armor, horned helmet, glowing red eyes, massive pauldrons, dark night fortress blurred in the background. Storybook-style fantasy painting, soft painterly brushwork, warm lantern glow against dark blue night with red accents. Square composition, centered bust. No text, no letters, no numbers, no watermark, no logo. Original character that does not resemble any real person or existing game character.
+```
+
+## banner_boss.png
+
+성문 앞에 선 거대한 그림자 군주와 그 뒤의 군세.
+
+```text
+Wide banner art: a gigantic shadow warlord in black armor and a horned helmet with glowing red eyes standing before a stone fortress gate at night, rows of small dark soldiers marching behind him, tiny defenders holding a warm lantern on the walls above. Storybook-style fantasy painting, soft painterly brushwork, warm lantern glow against dark blue night with red accents. Wide panoramic composition. No text, no letters, no numbers, no watermark, no logo. Original character that does not resemble any real person or existing game character.
+```
+
+## icon.png
+
+체험 아이콘: 가운데의 빛나는 등불과 성채 실루엣. 작게 줄여도 알아보기 쉬운 단순한 구도.
+
+```text
+Simple game icon art: one bright glowing lantern in the center with a dark stone fortress silhouette around it, warm light against dark blue night, minimal bold shapes that stay readable at small size. Storybook-style fantasy painting, flat simple centered composition, square format. No text, no letters, no numbers, no watermark, no logo.
+```

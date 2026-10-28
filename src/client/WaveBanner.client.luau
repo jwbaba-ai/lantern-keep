@@ -148,14 +148,68 @@ end
 local titleLine = makeLabel("Title", 1, 24, Color3.new(1, 1, 1))
 local badgeLine = makeLabel("Badge", 2, 18, Color3.fromRGB(120, 220, 255))
 local noteLine = makeLabel("Note", 3, 19, Color3.new(1, 1, 1))
-local laneLine = makeLabel("Lanes", 4, 18, Color3.fromRGB(255, 230, 150))
 local countdownLine = makeLabel("Countdown", 5, 16, Color3.fromRGB(180, 255, 180))
 local aiNotice = makeLabel("AINotice", 6, 13, Color3.fromRGB(160, 160, 160))
+
+-- 셋째 줄 행: 보스 초상화(작게, 보스 웨이브에만) + 성문 요약 글자.
+-- 글자 프레임 안의 가로 행이라 휴대폰 배율(UIScale)은 그대로 받는다.
+local laneRow = Instance.new("Frame")
+laneRow.Name = "LanesRow"
+laneRow.Size = UDim2.new(1, -16, 0, 18)
+laneRow.BackgroundTransparency = 1
+laneRow.LayoutOrder = 4
+laneRow.Parent = textFrame
+
+local laneRowLayout = Instance.new("UIListLayout")
+laneRowLayout.FillDirection = Enum.FillDirection.Horizontal
+laneRowLayout.Padding = UDim.new(0, 4)
+laneRowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+laneRowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+laneRowLayout.Parent = laneRow
+
+-- [보스] 앞에 작게 붙는 초상화. ID가 0이면 글자만 나온다 (말풍선과 같은 규칙).
+local bossPortrait = Instance.new("ImageLabel")
+bossPortrait.Name = "BossPortrait"
+bossPortrait.Size = UDim2.new(0, 26, 0, 26)
+bossPortrait.BackgroundTransparency = 1
+bossPortrait.Image = ""
+bossPortrait.Visible = false
+bossPortrait.LayoutOrder = 1
+bossPortrait.Parent = laneRow
+
+local laneLine = Instance.new("TextLabel")
+laneLine.Name = "Lanes"
+laneLine.Size = UDim2.new(1, -16, 0, 18)
+laneLine.BackgroundTransparency = 1
+laneLine.TextScaled = true
+laneLine.TextColor3 = Color3.fromRGB(255, 230, 150)
+laneLine.Text = ""
+laneLine.LayoutOrder = 2
+laneLine.Parent = laneRow
+local laneCap = Instance.new("UITextSizeConstraint")
+laneCap.MaxTextSize = 18
+laneCap.Parent = laneLine
+
+-- 보스 행 크기: 초상화가 보일 때만 행을 키우고 글자칸을 줄인다.
+-- 디렉터 표식과 같이 휴대폰 배율을 받는다.
+local BASE_BOSS = 26
+local function applyBossRowSize(s)
+	local portraitPx = math.floor(BASE_BOSS * s + 0.5)
+	if bossPortrait.Visible then
+		bossPortrait.Size = UDim2.fromOffset(portraitPx, portraitPx)
+		laneRow.Size = UDim2.new(1, -16, 0, portraitPx)
+		laneLine.Size = UDim2.new(1, -16 - portraitPx - 4, 0, 18)
+	else
+		laneRow.Size = UDim2.new(1, -16, 0, 18)
+		laneLine.Size = UDim2.new(1, -16, 0, 18)
+	end
+end
 
 -- 컨테이너 크기는 화면 배율에 맞추고, 글자는 안쪽 UIScale로 맞춘다.
 -- iPhone 가로(844x390, 배율 0.55)면 높이가 약 83으로 화면의 35% 안에 든다.
 local BASE_W, BASE_H = 520, 150
 local BASE_BADGE = 40
+local currentScale = 1
 local function applyBannerScale(s)
 	frame.Size = UDim2.fromOffset(
 		math.floor(BASE_W * s + 0.5),
@@ -168,6 +222,9 @@ local function applyBannerScale(s)
 		math.floor(BASE_BADGE * s + 0.5)
 	)
 	directorBadge.Position = UDim2.new(1, -math.floor(6 * s + 0.5), 0, math.floor(6 * s + 0.5))
+	-- 보스 초상화 행도 같은 배율을 받는다.
+	currentScale = s
+	applyBossRowSize(s)
 end
 UiScale.watch(applyBannerScale)
 
@@ -274,9 +331,21 @@ local function render()
 	else
 		laneLine.Text = rest
 	end
-	-- 이벤트 그림: 있는 웨이브에만 배경으로 깐다. ID가 0이면 글자만 나온다.
+	-- [보스] 앞에 보스 초상화를 작게 붙인다. ID가 0이면 글자만 나온다.
+	local warlordArt = artOf("PortraitWarlord")
+	if bossPrefix and warlordArt then
+		bossPortrait.Image = warlordArt
+		bossPortrait.Visible = true
+	else
+		bossPortrait.Image = ""
+		bossPortrait.Visible = false
+	end
+	applyBossRowSize(currentScale)
+	-- 배경 그림: 보스 웨이브면 BannerBoss를 이벤트 그림보다 먼저 깐다.
+	-- ID가 0이면 글자만 나온다.
+	local bossArt = data.boss == true and artOf("BannerBoss") or nil
 	local eventKey = data.plan and EVENT_ART[data.plan.event]
-	local art = eventKey and artOf(eventKey) or nil
+	local art = bossArt or (eventKey and artOf(eventKey)) or nil
 	if art then
 		artImage.Image = art
 		artLayer.Visible = true

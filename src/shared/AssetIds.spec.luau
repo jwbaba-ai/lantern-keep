@@ -18,6 +18,8 @@ local KEYS = {
 	"BannerElite",
 	"BannerReinforcement",
 	"BannerBloodMoon",
+	"PortraitWarlord",
+	"BannerBoss",
 }
 
 -- 1. 모든 키가 존재하고 숫자다.
@@ -45,6 +47,15 @@ end
 -- 3. 없는 키도 nil을 돌려준다.
 do
 	check("missing_key_nil", AssetIds.imageOrNil("NoSuchKey") == nil)
+end
+
+-- 4. day8 새 키 2개가 있고 숫자다 (업로드 전 0이면 그림 숨기기).
+do
+	check(
+		"day8_boss_keys",
+		type(AssetIds.PortraitWarlord) == "number"
+			and type(AssetIds.BannerBoss) == "number"
+	)
 end
 
 return results

@@ -1,5 +1,8 @@
 {
+  "day": 1,
   "wave": 1,
+  "total_waves": 3,
+  "waves_left": 2,
   "lantern_health_pct": 90,
   "breached_lane": "south",
   "revives": 1,

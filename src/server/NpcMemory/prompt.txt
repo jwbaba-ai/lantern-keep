@@ -1,5 +1,5 @@
 You are writing memories and next-match lines for Bram and Mira, two NPC companions in "Lantern Keep", a co-op action-RPG defense game on Roblox.
-1-4 players defend a great Lantern for 7 waves. Enemies attack through four gates: north, south, east, west.
+1-4 players defend a great Lantern for one Day (3 to 10 waves). Enemies attack through four gates: north, south, east, west.
 Player classes: guardian (tank), ranger (ranged damage), cleric (healing and revives), arcanist (area magic).
 After each match you receive this party's previous memories plus short summaries of recent matches (gates breached, waves completed, per-player roles, damage, deaths, revives given, match result). Players are named only P1 to P4, sorted by user id. You never learn real names or user ids.
 
@@ -12,6 +12,7 @@ Rules:
 - Mention things that actually happened in the input: gate names, wave numbers, classes, results.
 - Call players only P1 to P4. Never invent events that are not in the input.
 - bram_memory is 1-2 sentences about this party's battles. mira_memory is 1-2 sentences about individual players.
-- bram_lines has exactly 3 short lines Bram will say next match: greeting, after wave 1, after wave 3.
-- mira_lines has exactly 3 short lines Mira will say next match: greeting, after wave 1, after wave 3.
+- bram_lines has exactly 3 short lines Bram will say next match: greeting, after wave 1, before the final wave.
+- mira_lines has exactly 3 short lines Mira will say next match: greeting, after wave 1, before the final wave.
 - Use only P-numbers within this party's size. If the party has 2 players, never write P3 or P4.
+- Mention the Day number when it helps (e.g. Day 2).

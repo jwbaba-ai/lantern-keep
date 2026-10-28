@@ -62,9 +62,11 @@ function MatchRecord.recordWave(record, summary, perPlayer)
 	end
 end
 
-function MatchRecord.finish(record, result, wavesCompleted)
+function MatchRecord.finish(record, result, wavesCompleted, day, totalWaves)
 	record.result = result
 	record.waves_completed = wavesCompleted
+	record.day = day
+	record.total_waves = totalWaves
 end
 
 -- 모델·DataStore에 넣는 userId·이름 없는 사건 요약.
@@ -94,6 +96,8 @@ function MatchRecord.toEvent(record)
 	return {
 		result = record.result,
 		waves_completed = record.waves_completed,
+		day = record.day,
+		total_waves = record.total_waves,
 		waves = waves,
 		players = players,
 	}

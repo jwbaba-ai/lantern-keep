@@ -59,7 +59,7 @@ function NpcDebug.debugEndMatch()
 	local ok, err = pcall(function()
 		MemoryStore.finishAndSave(record, "defeat", 3, userIds, function(previous, events)
 			return NpcClient.summarize(previous, events)
-		end)
+		end, 1, 3)
 	end)
 	if not ok then
 		warn("[Npc] debugEndMatch 실패: " .. tostring(err))

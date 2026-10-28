@@ -424,7 +424,7 @@ local function runMatch(matchNumber, day)
 		local summary = MatchStats.buildSummary(tracker, wave, lanternHealthPct(lantern), {
 			tactic = currentPlan.tactic,
 			event = currentPlan.event,
-		}, roster)
+		}, roster, day, totalWaves)
 		local okSummary, summaryJson = pcall(HttpService.JSONEncode, HttpService, summary)
 		if okSummary then
 			print("[MatchStats] " .. summaryJson)
@@ -505,7 +505,7 @@ local function runMatch(matchNumber, day)
 		local ok, err = pcall(function()
 			MemoryStore.finishAndSave(record, result, completedWaves, startIds, function(previous, events)
 				return NpcClient.summarize(previous, events)
-			end)
+			end, day, totalWaves)
 		end)
 		npcSaveInProgress = false
 		if not ok then

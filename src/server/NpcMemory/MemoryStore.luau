@@ -153,10 +153,11 @@ end
 -- 경기 기록(record)을 확정하고 파티 기억에 반영한다: 불러오기 → 추가·요약 → 저장.
 -- summarizeFn(previous, events) → 응답 테이블(없으면 nil).
 -- DataStore 열기 실패는 에러를 던지므로 호출한 쪽이 pcall로 감싼다.
+-- day·totalWaves: 이번 판의 Day 번호와 웨이브 수. 기록 event에 함께 저장한다.
 -- 돌려값: saved, source.
 -- DirectorService(실제 경기 종료)와 NpcDebug(가짜 기록)가 같은 함수를 쓴다.
-function MemoryStore.finishAndSave(record, result, wavesCompleted, userIds, summarizeFn)
-	MatchRecord.finish(record, result, wavesCompleted)
+function MemoryStore.finishAndSave(record, result, wavesCompleted, userIds, summarizeFn, day, totalWaves)
+	MatchRecord.finish(record, result, wavesCompleted, day, totalWaves)
 	local partySize = #(userIds or {})
 	local key = MemoryStore.partyKey(userIds)
 	local store = MemoryStore.getStore()

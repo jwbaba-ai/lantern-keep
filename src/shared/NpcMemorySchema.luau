@@ -18,14 +18,14 @@ return {
 			["items"] = {
 				["type"] = "string",
 			},
-			["description"] = "Exactly 3 short lines Bram will say next match: greeting, after wave 1, after wave 3.",
+			["description"] = "Exactly 3 short lines Bram will say next match: greeting, after wave 1, before the final wave.",
 		},
 		["mira_lines"] = {
 			["type"] = "array",
 			["items"] = {
 				["type"] = "string",
 			},
-			["description"] = "Exactly 3 short lines Mira will say next match: greeting, after wave 1, after wave 3.",
+			["description"] = "Exactly 3 short lines Mira will say next match: greeting, after wave 1, before the final wave.",
 		},
 	},
 }

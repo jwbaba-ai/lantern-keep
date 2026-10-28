@@ -24,7 +24,12 @@ def main(paths):
     files = [p for arg in paths for p in glob.glob(arg)]
     for path in files:
         with open(path, encoding="utf-8") as f:
-            summary = f.read()
+            payload = json.loads(f.read())
+        # Day 이전 fixture에는 day·total_waves가 없다. 기본값(1, 3)으로 채운다.
+        payload.setdefault("day", 1)
+        payload.setdefault("total_waves", 3)
+        payload.setdefault("waves_left", payload["total_waves"] - payload.get("wave", 1))
+        summary = json.dumps(payload, ensure_ascii=False)
         start = time.time()
         try:
             res = client.chat.completions.create(

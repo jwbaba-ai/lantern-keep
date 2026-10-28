@@ -63,7 +63,10 @@ end
 
 -- roster: { { userId, role } } — 가만히 있던 플레이어도 요약에 넣기 위한 명단.
 -- waveNumber: 막 끝난 웨이브 번호. previousWave: { tactic, event }.
-function MatchStats.buildSummary(tracker, waveNumber, lanternHealthPct, previousWave, roster)
+-- day: 이번 판 Day 번호. totalWaves: 이번 판 웨이브 수.
+function MatchStats.buildSummary(tracker, waveNumber, lanternHealthPct, previousWave, roster, day, totalWaves)
+	day = day or 1
+	totalWaves = totalWaves or waveNumber
 	local breachedLane = nil
 	local best = 0
 	for _, lane in ipairs(Config.Lanes) do
@@ -100,7 +103,10 @@ function MatchStats.buildSummary(tracker, waveNumber, lanternHealthPct, previous
 	end)
 
 	return {
+		day = day,
 		wave = waveNumber,
+		total_waves = totalWaves,
+		waves_left = math.max(0, totalWaves - waveNumber),
 		lantern_health_pct = lanternHealthPct,
 		breached_lane = breachedLane,
 		revives = tracker.revives,

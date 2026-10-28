@@ -1,7 +1,8 @@
 -- NPC 동료 등장·대사 (단일 기준: docs/tasks/day5.md 5단계).
 -- 등불 근처에 Bram(노장 대장)과 Mira(견습 치유사)를 만든다(전투 불참).
 -- 저장된 *_lines[1..3]을 순서대로 말한다: 웨이브 1 시작 직전(인사),
--- 웨이브 1 종료 후 대기, 웨이브 3 종료 후 대기.
+-- 웨이브 1 종료 후 대기, 마지막 웨이브 직전 대기.
+-- Day 1(3웨이브)이면 웨이브 2 뒤에 나온다.
 -- 표시 전에 각 줄을 필터하고, 그다음 P1 등을 DisplayName으로 바꾼다.
 -- 필터 실패·기억 없음(첫 판)·해당 플레이어 없음이면 Config 기본 대사를 쓴다.
 -- 경기 시작 시 기억을 불러오지 못해도(DataStore 실패) 경기는 그대로 시작한다.
@@ -161,7 +162,9 @@ local function onState()
 		saidAfterWave1 = true
 		say("bram", 2)
 		say("mira", 2)
-	elseif data.phase == "intermission" and data.display_wave == 4 and not saidAfterWave3 then
+	elseif data.phase == "intermission"
+		and data.display_wave == (data.total_waves or 0)
+		and not saidAfterWave3 then
 		saidAfterWave3 = true
 		say("bram", 3)
 		say("mira", 3)

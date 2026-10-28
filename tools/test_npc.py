@@ -48,6 +48,9 @@ def main(paths):
     for path in files:
         with open(path, encoding="utf-8") as f:
             payload = json.load(f)
+        # Day 이전 fixture에는 day·total_waves가 없다. 기본값(1, 3)으로 채운다.
+        payload.setdefault("day", 1)
+        payload.setdefault("total_waves", 3)
         start = time.time()
         try:
             res = client.chat.completions.create(

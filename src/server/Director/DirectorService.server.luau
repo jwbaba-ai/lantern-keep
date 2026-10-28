@@ -13,6 +13,7 @@ local FallbackWaves = require(Shared:WaitForChild("FallbackWaves"))
 local DirectorFolder = script.Parent
 local DirectorClient = require(DirectorFolder:WaitForChild("DirectorClient"))
 local WaveValidator = require(DirectorFolder:WaitForChild("WaveValidator"))
+local PartyScale = require(DirectorFolder:WaitForChild("PartyScale"))
 local MatchStats = require(DirectorFolder:WaitForChild("MatchStats"))
 local EnemyFactory = require(DirectorFolder.Parent:WaitForChild("Enemies"):WaitForChild("EnemyFactory"))
 local CombatService = require(DirectorFolder.Parent:WaitForChild("Combat"):WaitForChild("CombatService"))
@@ -147,10 +148,19 @@ for wave = 1, Config.TotalWaves do
 	if lanternHealth(lantern) <= 0 then
 		break
 	end
-	logPlan(wave, currentSource, currentPlan)
-	setDirectorState(state, wave, currentSource, currentPlan)
+	-- 파티 인원 보정: 검증 통과 뒤 적용 직전에 적 수를 줄인다 (요약은 그대로).
+	local partySize = #Players:GetPlayers()
+	local playPlan, scaledTotal = PartyScale.scalePlan(currentPlan, partySize)
+	print(string.format(
+		"[Director] wave=%d party=%d scaled_enemies=%d",
+		wave,
+		partySize,
+		scaledTotal
+	))
+	logPlan(wave, currentSource, playPlan)
+	setDirectorState(state, wave, currentSource, playPlan)
 
-	local tracker = playWave(map, lantern, wave, currentPlan)
+	local tracker = playWave(map, lantern, wave, playPlan)
 	wavesCompleted = wave
 
 	if lanternHealth(lantern) <= 0 then

@@ -17,6 +17,10 @@ return {
 	MaxEnemies = 30,
 	BloodMoonMinWave = 6,
 
+	-- Party scaling (day4 0-1.5): 검증 통과 뒤 적용 직전에 적 수·체력을 줄인다.
+	PartyCountScale = { 0.5, 0.7, 0.85, 1.0 }, -- 1~4인 적 수 배율 (올림, 최소 1)
+	PartyHealthScale = { 0.6, 0.8, 0.9, 1.0 }, -- 1~4인 적 체력 배율
+
 	Lanes = { "north", "south", "east", "west" },
 	EnemyTypes = { "Grunt", "Runner", "Brute", "Archer", "Shaman" },
 	Tactics = { "focus_weak_lane", "split_push", "flank", "siege" },

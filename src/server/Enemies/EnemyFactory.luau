@@ -62,6 +62,10 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved)
 		return nil
 	end
 
+	-- 파티 인원 보정: 적 체력 배율 (Config.PartyHealthScale, 스폰 시점 인원 기준).
+	local partySize = math.clamp(#Players:GetPlayers(), 1, 4)
+	local maxHp = math.max(1, math.floor(spec.Health * Config.PartyHealthScale[partySize] + 0.5))
+
 	local body = Instance.new("Part")
 	body.Name = enemyType
 	body.Size = spec.Size
@@ -69,7 +73,7 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved)
 	body.Anchored = true
 	body.CanCollide = false
 	body.BrickColor = spec.Color
-	body:SetAttribute("Health", spec.Health)
+	body:SetAttribute("Health", maxHp)
 	body:SetAttribute("EnemyType", enemyType)
 	body:SetAttribute("Lane", lane)
 
@@ -105,7 +109,7 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved)
 	-- 테스트 처치 타이머: 플레이어가 없을 때(자동 테스트)만 쓴다.
 	-- 1명 이상 있으면 실제 전투로만 적이 쓰러진다.
 	if Config.AutoKillWhenNoPlayers and #Players:GetPlayers() == 0 then
-		task.delay(spec.Health * EnemyFactory.TimePerHealth, function()
+		task.delay(maxHp * EnemyFactory.TimePerHealth, function()
 			resolve("killed")
 		end)
 	end

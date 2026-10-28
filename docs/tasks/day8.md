@@ -32,7 +32,11 @@
 
 ## 0단계: day7 확인 결과 반영
 day7 devlog의 체크리스트에 사람이 남긴 메모가 있으면 먼저 고치고 커밋한다.
-`docs/reports/balance_sim.md`(day7b)에서 사람이 고른 조정 제안이 devlog에 있으면, 1단계 Config 값을 정할 때 그 값을 쓴다. 고른 것이 없으면 이 문서의 기본값을 쓴다.
+**밸런스 조정 (사람 선택 2026-10-29, day7b `balance_sim.md` 추천안)** — 각각 커밋한다.
+- `FallbackWaves.luau` 웨이브 3~7의 적 수 총합을 각각 약 15% 줄인다(올림·내림으로 맞추되 각 항목 최소 1). 성문·전술·이벤트 구성은 그대로 둔다.
+- 보스 체력은 아래 3단계대로 Brute의 **5배**로 한다.
+- 디렉터 이벤트 다양화 문장은 5단계에서 추가한다.
+- 바꾼 뒤 `python tools/balance_sim.py --matches 300 --seed 7`을 다시 돌려 표를 devlog에 붙인다. 시뮬은 협동이 없어 비관적이므로, 목표 구간 밖이어도 더 고치지 않는다.
 
 ## 1단계: 설정과 규칙 모듈
 - `Config.luau` 새 키:
@@ -61,7 +65,7 @@ day7 devlog의 체크리스트에 사람이 남긴 메모가 있으면 먼저 �
 - `FallbackWaves.luau`에 웨이브 8~10을 추가한다. 7보다 조금씩 강하게 만들고, `blood_moon`은 넣지 않는다. 총합은 `MaxEnemies` 이하로 한다.
 
 ## 3단계: 보스
-- `EnemyCatalog.luau`에 `Warlord`를 추가한다: 체력 Brute의 8배, `Speed = 5`, `LanternDamage = 40`, 크기는 Brute의 약 2배, 이름표는 `보스 · 그림자 군주`이다.
+- `EnemyCatalog.luau`에 `Warlord`를 추가한다: 체력 Brute의 5배, `Speed = 5`, `LanternDamage = 40`, 크기는 Brute의 약 2배, 이름표는 `보스 · 그림자 군주`이다.
 - `Config.EnemyTypes`와 웨이브 스키마에는 **넣지 않는다.** 그래서 디렉터는 고를 수 없고, 디렉터 출력에 있으면 지금처럼 검증에서 거부된다.
 - 보스 웨이브에서는 서버가 계획에 `{ type = "Warlord", count = 1, lane = 적이 가장 많은 성문 }`을 붙인다. 이 적은 웨이브 시작 10초 뒤에 나온다. 파티 체력 배율과 Day 체력 배율을 모두 받는다.
 - 배너 셋째 줄 앞에 `[보스] 그림자 군주 · 북문`을 붙인다(고정 문구). 보스 체력이 남아 있으면 웨이브가 끝나지 않는다(기존 `arrived + killed < spawned` 규칙 그대로).
@@ -80,6 +84,8 @@ day7 devlog의 체크리스트에 사람이 남긴 메모가 있으면 먼저 �
 - `MatchStats.buildSummary` 요약에 `day`, `total_waves`, `waves_left`를 더한다.
 - `src/server/Director/prompt.txt`의 "A match has 7 waves." 문장을 다음으로 바꾼다.
   "A match is one Day. Day 1 has 3 waves, Day 2 has 5, Day 3 has 7, Day 4 has 9, and Day 5 and later have 10. The summary tells you day, wave, total_waves and waves_left. Ramp up toward the last wave. The game itself adds a boss to the last wave from Day 5 on, so never add a boss yourself."
+- 같은 파일에 한 문장 더 추가한다(day7b에서 이벤트 50건 중 38건이 reinforcement_delay였다): "Vary the event across waves: do not repeat the previous wave's event, and use reinforcement_delay only when the team is clearly struggling."
+- 프롬프트를 바꾼 뒤 `python tools/eval_director.py fixtures/match_summaries/team_*.json --runs 1 --max-calls 6`로 이벤트 분포를 다시 재고 devlog에 적는다(모델 호출 6회).
 - 경기 기록(`MatchRecord`)의 결과에 `day`와 `total_waves`를 더한다.
 - `src/server/NpcMemory/prompt.txt`:
   - "for 7 waves"를 "for one Day (3 to 10 waves)"로 바꾼다.

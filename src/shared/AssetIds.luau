@@ -4,13 +4,13 @@
 -- 값이 0이면 그 그림 없이 지금처럼 글자만 보여 준다.
 -- 오류나 빈 사각형이 보이면 안 된다.
 local AssetIds = {
-	PortraitBram = 0,
-	PortraitMira = 0,
-	BannerDirector = 0,
-	BannerFog = 0,
-	BannerElite = 0,
-	BannerReinforcement = 0,
-	BannerBloodMoon = 0,
+	PortraitBram = 114588695697614,
+	PortraitMira = 89843632506633,
+	BannerDirector = 96904093889160,
+	BannerFog = 87457716488706,
+	BannerElite = 113715700585490,
+	BannerReinforcement = 106938877540303,
+	BannerBloodMoon = 138826760998553,
 }
 
 -- id가 0이면 그림을 숨기라는 뜻: nil을 돌려준다.

@@ -12,6 +12,7 @@ return {
 	AutoKillWhenNoPlayers = true, -- 플레이어가 없으면(자동 테스트) 체력 비례 타이머로 적 처치
 	TotalWaves = 7,
 	IntermissionSeconds = 20,
+	MatchStartWaitSeconds = 20, -- 웨이브 1 전 로비 대기 상한(초). 지나도 0명이면 자동 테스트로 진행
 	LanternMaxHealth = 100,
 	MinEnemies = 4,
 	MaxEnemies = 30,

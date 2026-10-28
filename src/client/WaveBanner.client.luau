@@ -107,12 +107,16 @@ local function render()
 	if not data then
 		return
 	end
-	titleLine.Text = string.format(
-		"웨이브 %d / %d · %s",
-		data.display_wave or 0,
-		TOTAL_WAVES,
-		data.display_name or ""
-	)
+	if data.phase == "lobby" then
+		titleLine.Text = data.display_name or ""
+	else
+		titleLine.Text = string.format(
+			"웨이브 %d / %d · %s",
+			data.display_wave or 0,
+			TOTAL_WAVES,
+			data.display_name or ""
+		)
+	end
 	if data.source == "muse" then
 		badgeLine.Text = "AI 디렉터가 여러분의 플레이를 보고 설계한 웨이브"
 		badgeLine.TextColor3 = Color3.fromRGB(120, 220, 255)
@@ -147,7 +151,7 @@ local function render()
 end
 
 local function refreshCountdown()
-	if not lastData or lastData.phase ~= "intermission" then
+	if not lastData or (lastData.phase ~= "intermission" and lastData.phase ~= "lobby") then
 		countdownLine.Text = ""
 		return
 	end
@@ -158,7 +162,11 @@ local function refreshCountdown()
 	end
 	local left = math.ceil(endsAt - Workspace:GetServerTimeNow())
 	if left > 0 then
-		countdownLine.Text = string.format("다음 웨이브까지 %d초", left)
+		if lastData.phase == "lobby" then
+			countdownLine.Text = string.format("시작까지 %d초", left)
+		else
+			countdownLine.Text = string.format("다음 웨이브까지 %d초", left)
+		end
 	else
 		countdownLine.Text = "곧 시작…"
 	end

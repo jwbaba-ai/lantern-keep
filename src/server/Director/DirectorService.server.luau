@@ -149,6 +149,34 @@ if not state then
 	state.Parent = ReplicatedStorage
 end
 
+-- 로비: 1명 이상 들어오고 모두 직업을 고를 때까지 기다린다.
+-- 최대 MatchStartWaitSeconds까지만 기다리고, 그래도 0명이면 자동 테스트로 진행한다.
+local function lobbyReady()
+	local players = Players:GetPlayers()
+	if #players == 0 then
+		return false
+	end
+	for _, player in ipairs(players) do
+		if player:GetAttribute("Class") == nil then
+			return false
+		end
+	end
+	return true
+end
+local lobbyEndsAt = Workspace:GetServerTimeNow() + (Config.MatchStartWaitSeconds or 20)
+DirectorState.publish(state, {
+	phase = "lobby",
+	displayWave = 1,
+	source = "pending",
+	plan = nil,
+	waveName = "곧 시작합니다",
+	directorNote = "",
+	intermissionEndsAt = lobbyEndsAt,
+})
+while not lobbyReady() and Workspace:GetServerTimeNow() < lobbyEndsAt do
+	task.wait(0.5)
+end
+
 local currentPlan = FallbackWaves[1]
 local currentSource = "fallback"
 local wavesCompleted = 0

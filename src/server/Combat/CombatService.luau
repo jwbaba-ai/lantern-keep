@@ -91,7 +91,8 @@ local function dealDamage(player, body, amount)
 		return
 	end
 	if currentTracker then
-		MatchStats.recordDamage(currentTracker, player, amount)
+		-- 실제로 깎은 체력만 기록한다 (넘치는 피해 제외).
+		MatchStats.recordDamage(currentTracker, player, result.dealt)
 	end
 end
 

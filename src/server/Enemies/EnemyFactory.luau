@@ -37,20 +37,23 @@ function EnemyFactory.getFolder()
 end
 
 -- 적 파트에 피해를 준다. 전투 데미지의 유일한 입구다.
--- 돌려값: "died"(처치됨), "alive"(생존), nil(이미 정리된 적).
+-- 돌려값: { status = "died"|"alive", dealt = 실제로 깎은 체력 }.
+-- dealt는 남은 체력과 피해 중 작은 값(넘치는 피해 제외). nil(이미 정리된 적).
 function EnemyFactory.damage(body, amount)
 	local entry = active[body]
 	if not entry or body.Parent == nil then
 		return nil
 	end
-	local hp = (body:GetAttribute("Health") or 0) - amount
+	local before = body:GetAttribute("Health") or 0
+	local dealt = math.min(before, amount)
+	local hp = before - amount
 	if hp <= 0 then
 		body:SetAttribute("Health", 0)
 		entry.resolve("killed")
-		return "died"
+		return { status = "died", dealt = dealt }
 	end
 	body:SetAttribute("Health", hp)
-	return "alive"
+	return { status = "alive", dealt = dealt }
 end
 
 function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved)

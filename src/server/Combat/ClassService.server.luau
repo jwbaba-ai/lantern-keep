@@ -79,6 +79,10 @@ chooseEvent.OnServerEvent:Connect(function(player, classKey)
 	if not ClassCatalog[classKey] then
 		return
 	end
+	-- 한 경기에 한 번만 고른다. 이미 골랐으면 무시 (재선택 체력 회복 방지).
+	if player:GetAttribute("Class") ~= nil then
+		return
+	end
 	assignClass(player, classKey)
 end)
 

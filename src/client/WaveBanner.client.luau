@@ -50,27 +50,31 @@ local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
 gui.Name = "WaveBanner"
 gui.ResetOnSpawn = false
+-- 그림과 글자가 같은 ZIndex여도 그리는 순서가 형제 순서로 정해지게 한다.
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
 
+-- 배너 전체를 묶는 컨테이너: 크기 조정·pop 트윈이 그림과 글자에 같이 걸린다.
 local frame = Instance.new("Frame")
+frame.Name = "Banner"
 frame.AnchorPoint = Vector2.new(0.5, 0)
 frame.Position = UDim2.new(0.5, 0, 0, 12)
 frame.Size = UDim2.new(0, 520, 0, 150)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 frame.BackgroundTransparency = 0.25
+frame.BorderSizePixel = 0
+frame.ClipsDescendants = true
 frame.Parent = gui
 
--- 이벤트 배경 그림: 배너 뒤에 깔고, 글자가 읽히도록 어두운 판을 그 위에 둔다.
--- UIListLayout에 딸려 들어가지 않게 배너와는 별도 레이어로 둔다.
+-- 이벤트 배경 그림: 컨테이너 안에서 글자보다 뒤(ZIndex 1)에 깔고,
+-- 글자가 읽히도록 어두운 판을 그 위에 둔다.
 local artLayer = Instance.new("Frame")
 artLayer.Name = "EventArt"
-artLayer.AnchorPoint = Vector2.new(0.5, 0)
-artLayer.Position = UDim2.new(0.5, 0, 0, 12)
-artLayer.Size = UDim2.new(0, 520, 0, 150)
+artLayer.Size = UDim2.new(1, 0, 1, 0)
 artLayer.BackgroundTransparency = 1
 artLayer.Visible = false
-artLayer.ZIndex = 0
-artLayer.Parent = gui
+artLayer.ZIndex = 1
+artLayer.Parent = frame
 
 local artImage = Instance.new("ImageLabel")
 artImage.Name = "Art"
@@ -88,15 +92,26 @@ artDim.BackgroundTransparency = 0.45
 artDim.BorderSizePixel = 0
 artDim.Parent = artLayer
 
--- AI 디렉터 표식: muse 웨이브일 때 배지 옆에 작게 붙인다.
+-- 글자 프레임: 그림과 형제로 글자보다 앞(ZIndex 2)에 둔다.
+-- UIListLayout은 이 안에만 둔다.
+local textFrame = Instance.new("Frame")
+textFrame.Name = "Text"
+textFrame.Size = UDim2.new(1, 0, 1, 0)
+textFrame.BackgroundTransparency = 1
+textFrame.ZIndex = 2
+textFrame.Parent = frame
+
+-- AI 디렉터 표식: muse 웨이브일 때 컨테이너 안 오른쪽 위에 둔다.
 local directorBadge = Instance.new("ImageLabel")
 directorBadge.Name = "DirectorBadge"
+directorBadge.AnchorPoint = Vector2.new(1, 0)
+directorBadge.Position = UDim2.new(1, -6, 0, 6)
 directorBadge.Size = UDim2.new(0, 40, 0, 40)
 directorBadge.BackgroundTransparency = 1
 directorBadge.Image = ""
 directorBadge.Visible = false
-directorBadge.ZIndex = 2
-directorBadge.Parent = gui
+directorBadge.ZIndex = 3
+directorBadge.Parent = frame
 
 local scale = Instance.new("UIScale")
 scale.Parent = frame
@@ -105,7 +120,7 @@ local layout = Instance.new("UIListLayout")
 layout.Padding = UDim.new(0, 2)
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 layout.VerticalAlignment = Enum.VerticalAlignment.Center
-layout.Parent = frame
+layout.Parent = textFrame
 
 local function makeLabel(name, order, size, color)
 	local label = Instance.new("TextLabel")
@@ -116,7 +131,7 @@ local function makeLabel(name, order, size, color)
 	label.TextColor3 = color
 	label.Text = ""
 	label.LayoutOrder = order
-	label.Parent = frame
+	label.Parent = textFrame
 	return label
 end
 
@@ -215,14 +230,11 @@ local function render()
 		artImage.Image = ""
 		artLayer.Visible = false
 	end
-	-- 디렉터 표식: muse 웨이브에만 배지 옆에 작게 붙인다.
+	-- 디렉터 표식: muse 웨이브에만 컨테이너 안 오른쪽 위에 둔다.
 	local directorArt = artOf("BannerDirector")
 	if data.source == "muse" and directorArt then
 		directorBadge.Image = directorArt
 		directorBadge.Visible = true
-		local pos = frame.AbsolutePosition
-		local size = frame.AbsoluteSize
-		directorBadge.Position = UDim2.fromOffset(pos.X + size.X - 46, pos.Y + 6)
 	else
 		directorBadge.Visible = false
 	end
@@ -264,14 +276,9 @@ local function onChanged()
 	lastSource = data.source
 	lastData = data
 	render()
-	-- 결과 화면이 맡는 동안은 배너 전체(글자·그림·표식)를 숨긴다.
-	-- render()가 그림·표식을 다시 켤 수 있어 뒤에서 덮는다.
-	local showBanner = data.phase ~= "result"
-	frame.Visible = showBanner
-	if not showBanner then
-		artLayer.Visible = false
-		directorBadge.Visible = false
-	end
+	-- 결과 화면이 맡는 동안은 배너 전체를 숨긴다.
+	-- 그림·글자·표식이 모두 컨테이너 안에 있어 하나만 끄면 된다.
+	frame.Visible = data.phase ~= "result"
 	refreshCountdown()
 end
 state.Changed:Connect(onChanged)

@@ -14,6 +14,12 @@
 - 30초 넘게 멈추는 명령은 중단하고 보고한다(모델 호출 1회 대기는 예외, 최대 30초).
 - 각 단계가 끝날 때마다 커밋한다.
 
+## 0단계: day7 리뷰 수정 (예외로 `src/client/WaveBanner.client.luau` 한 파일만 고친다, 커밋 1개)
+- **[중간] 휴대폰에서 배너 글자가 두 번 줄어든다.** Studio에서 재현했다(844×392 화면에서 Banner 286×83인데 Text 157×46이고 왼쪽 위에 몰림).
+- 원인: `applyBannerScale`이 Banner 크기를 이미 `520*s`로 줄이고, 그 안의 Text(크기 `(1,0,1,0)`)에 `UIScale` `s`를 한 번 더 건다.
+- 고칠 것: Text 프레임을 `Size = UDim2.fromOffset(520, 150)`, `AnchorPoint = (0.5, 0.5)`, `Position = UDim2.fromScale(0.5, 0.5)`로 둔다. 그러면 `UIScale` `s`가 한 번만 적용되어 Banner와 같은 크기가 된다. 디렉터 표식(40×40)도 같은 배율을 받게 한다.
+- 확인: 화면 844×392에서 `Banner.Text.AbsoluteSize`가 `Banner.AbsoluteSize`와 1픽셀 이내로 같고, 두 위치도 같다. devlog에 측정값을 적는다.
+
 ## 1단계: 디렉터 출력 대량 검증 (`tools/eval_director.py`)
 - `test_director.py`와 같은 방식으로 호출한다. 같은 프롬프트, 스키마, 모델, effort를 쓴다. 공통 부분은 함수로 빼서 같이 써도 된다. 단, `test_director.py`의 사용법과 출력은 그대로 둔다.
 - 사용법: `python tools/eval_director.py fixtures/match_summaries/*.json --runs 4 --max-calls 32`

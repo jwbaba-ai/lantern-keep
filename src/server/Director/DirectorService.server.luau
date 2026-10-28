@@ -73,6 +73,48 @@ local function intermissionEndsAt(secondsLeft)
 	return Workspace:GetServerTimeNow() + math.max(0, secondsLeft)
 end
 
+-- 적이 가장 많은 성문. 동점이면 Config.Lanes 순서 앞쪽.
+local function busiestLane(plan)
+	local counts = { north = 0, south = 0, east = 0, west = 0 }
+	for _, e in ipairs(plan.enemies) do
+		if counts[e.lane] ~= nil then
+			counts[e.lane] += e.count
+		end
+	end
+	local bestLane = Config.Lanes[1]
+	local best = -1
+	for _, lane in ipairs(Config.Lanes) do
+		if counts[lane] > best then
+			best = counts[lane]
+			bestLane = lane
+		end
+	end
+	return bestLane
+end
+
+-- 보스 웨이브면 계획 복사본에 { type = "Warlord", count = 1, lane }을 붙인다.
+-- 디렉터는 보스를 고를 수 없고(Config.EnemyTypes에 없음),
+-- 서버가 검증·보정 뒤에 붙인다. 원본은 고치지 않는다.
+-- 돌려값: bossPlan, bossLane (보스 웨이브가 아니면 원래 계획과 nil).
+local function withBoss(plan, day, wave)
+	if not DayRules.isBossWave(day, wave) then
+		return plan, nil
+	end
+	local lane = busiestLane(plan)
+	local bossed = {
+		wave_name = plan.wave_name,
+		enemies = {},
+		tactic = plan.tactic,
+		event = plan.event,
+		director_note = plan.director_note,
+	}
+	for _, e in ipairs(plan.enemies) do
+		table.insert(bossed.enemies, { type = e.type, count = e.count, lane = e.lane })
+	end
+	table.insert(bossed.enemies, { type = "Warlord", count = 1, lane = lane })
+	return bossed, lane
+end
+
 -- 디버그 "남은 웨이브 건너뛰기" 플래그 (NpcDebug.debugFastMatch()가 켠다).
 -- 실제 경기 흐름 코드는 그대로 쓰고, 이 플래그만 확인한다.
 local function fastMatchRequested()
@@ -103,9 +145,15 @@ end
 
 -- 웨이브 하나를 끝까지 진행하고 통계를 돌려준다.
 -- dayHealthMult: Day 체력 배율 (EnemyFactory.spawn에 인자로 넘긴다).
-local function playWave(map, lantern, wave, plan, dayHealthMult)
+-- bossLane: 보스 웨이브의 보스 성문. 보스는 웨이브 시작 10초 뒤에 나온다.
+local function playWave(map, lantern, wave, plan, dayHealthMult, bossLane)
 	local tracker = MatchStats.new()
 	CombatService.beginWave(tracker)
+	-- 보스 자리 예약: 10초 뒤에 나오므로, 그 전에 일반 적이 다 끝나도
+	-- 웨이브가 끝나지 않게 spawned를 미리 하나 센다 (기존 arrived + killed < spawned 규칙 그대로).
+	if bossLane ~= nil then
+		MatchStats.recordSpawn(tracker, bossLane)
+	end
 	-- 이벤트 효과 적용 (웨이브가 끝나면 원래 값으로 되돌린다).
 	local waveMods = EventEffects.apply(plan.event)
 	local spawnInterval = EventEffects.spawnInterval(plan.event, SPAWN_INTERVAL)
@@ -120,6 +168,10 @@ local function playWave(map, lantern, wave, plan, dayHealthMult)
 	end
 
 	for _, entry in ipairs(plan.enemies) do
+		-- 보스는 아래 delayed 스폰으로 따로 나온다 (10초 뒤).
+		if entry.type == "Warlord" then
+			continue
+		end
 		for _ = 1, entry.count do
 			if lanternHealth(lantern) <= 0 or fastMatchRequested() then
 				break
@@ -142,6 +194,34 @@ local function playWave(map, lantern, wave, plan, dayHealthMult)
 		if lanternHealth(lantern) <= 0 or fastMatchRequested() then
 			break
 		end
+	end
+
+	-- 보스는 웨이브 시작 10초 뒤에 나온다.
+	-- 파티 체력 배율과 Day 체력 배율을 모두 받는다
+	-- (파티 배율은 spawn 안에서, Day 배율은 인자로).
+	-- 자동 테스트(플레이어 0명)의 체력 비례 처치도 보스에 그대로 적용된다.
+	if bossLane ~= nil then
+		task.delay(10, function()
+			if lanternHealth(lantern) <= 0 or fastMatchRequested() then
+				-- 보스가 나오지 못하면 예약 자리를 정리한다.
+				MatchStats.recordResolved(tracker, bossLane, "killed")
+				return
+			end
+			local boss = EnemyFactory.spawn(
+				"Warlord",
+				bossLane,
+				waypointsByLane[bossLane],
+				lantern,
+				onResolved,
+				nil,
+				dayHealthMult
+			)
+			if boss then
+				table.insert(bodies, boss)
+			else
+				MatchStats.recordResolved(tracker, bossLane, "killed")
+			end
+		end)
 	end
 
 	local waited = 0
@@ -285,7 +365,7 @@ local function runMatch(matchNumber, day)
 		-- 파티·Day 보정은 웨이브 시작 시점 복사본에만 건다 (요약·previous_wave는 그대로).
 		local partySize = #Players:GetPlayers()
 		local partyPlan = PartyScale.scalePlan(currentPlan, partySize)
-		local playPlan = DayRules.scalePlan(partyPlan, day)
+		local playPlan, bossLane = withBoss(DayRules.scalePlan(partyPlan, day), day, wave)
 		local scaledTotal = 0
 		for _, e in ipairs(playPlan.enemies) do
 			scaledTotal += e.count
@@ -310,7 +390,7 @@ local function runMatch(matchNumber, day)
 			intermissionEndsAt = 0,
 		})
 
-		local tracker = playWave(map, lantern, wave, playPlan, dayHealthMult)
+		local tracker = playWave(map, lantern, wave, playPlan, dayHealthMult, bossLane)
 		wavesCompleted = wave
 
 		if lanternHealth(lantern) <= 0 then
@@ -372,9 +452,13 @@ local function runMatch(matchNumber, day)
 
 		local rest = Config.IntermissionSeconds - (os.clock() - started)
 		-- 디렉터 응답 또는 대체 웨이브 확정: 다음 웨이브 정보로 갱신한다.
-		-- 대기 중 미리보기에도 웨이브 시작 때와 같은 순서로 보정을 쓴다
-		-- (PartyScale → DayRules, 시작 시점에 인원이 바뀌면 그때 다시 보정한다).
-		local previewPlan = DayRules.scalePlan(PartyScale.scalePlan(nextPlan, #Players:GetPlayers()), day)
+		-- 대기 중 미리보기와 성문 강조도 웨이브 시작 때와 같은 순서로 만든다
+		-- (PartyScale → DayRules → 보스 추가, 시작 시점에 인원이 바뀌면 그때 다시 보정한다).
+		local previewPlan = withBoss(
+			DayRules.scalePlan(PartyScale.scalePlan(nextPlan, #Players:GetPlayers()), day),
+			day,
+			wave + 1
+		)
 		DirectorState.publish(state, {
 			phase = "intermission",
 			displayWave = wave + 1,

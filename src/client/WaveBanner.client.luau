@@ -9,6 +9,24 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
+-- AssetIds가 Studio에 아직 없으면 그림 없이 글자만 보여 준다.
+local assetIdsModule = Shared:FindFirstChild("AssetIds")
+local AssetIds = assetIdsModule and require(assetIdsModule) or nil
+
+local function artOf(key)
+	if AssetIds then
+		return AssetIds.imageOrNil(key)
+	end
+	return nil
+end
+
+-- 이벤트 이름 -> AssetIds 키. none이면 배경 그림이 없다.
+local EVENT_ART = {
+	fog = "BannerFog",
+	elite_spawn = "BannerElite",
+	reinforcement_delay = "BannerReinforcement",
+	blood_moon = "BannerBloodMoon",
+}
 
 local TOTAL_WAVES = Config.TotalWaves
 
@@ -41,6 +59,44 @@ frame.Size = UDim2.new(0, 520, 0, 150)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 frame.BackgroundTransparency = 0.25
 frame.Parent = gui
+
+-- 이벤트 배경 그림: 배너 뒤에 깔고, 글자가 읽히도록 어두운 판을 그 위에 둔다.
+-- UIListLayout에 딸려 들어가지 않게 배너와는 별도 레이어로 둔다.
+local artLayer = Instance.new("Frame")
+artLayer.Name = "EventArt"
+artLayer.AnchorPoint = Vector2.new(0.5, 0)
+artLayer.Position = UDim2.new(0.5, 0, 0, 12)
+artLayer.Size = UDim2.new(0, 520, 0, 150)
+artLayer.BackgroundTransparency = 1
+artLayer.Visible = false
+artLayer.ZIndex = 0
+artLayer.Parent = gui
+
+local artImage = Instance.new("ImageLabel")
+artImage.Name = "Art"
+artImage.Size = UDim2.new(1, 0, 1, 0)
+artImage.BackgroundTransparency = 1
+artImage.ScaleType = Enum.ScaleType.Crop
+artImage.Image = ""
+artImage.Parent = artLayer
+
+local artDim = Instance.new("Frame")
+artDim.Name = "Dim"
+artDim.Size = UDim2.new(1, 0, 1, 0)
+artDim.BackgroundColor3 = Color3.new(0, 0, 0)
+artDim.BackgroundTransparency = 0.45
+artDim.BorderSizePixel = 0
+artDim.Parent = artLayer
+
+-- AI 디렉터 표식: muse 웨이브일 때 배지 옆에 작게 붙인다.
+local directorBadge = Instance.new("ImageLabel")
+directorBadge.Name = "DirectorBadge"
+directorBadge.Size = UDim2.new(0, 40, 0, 40)
+directorBadge.BackgroundTransparency = 1
+directorBadge.Image = ""
+directorBadge.Visible = false
+directorBadge.ZIndex = 2
+directorBadge.Parent = gui
 
 local scale = Instance.new("UIScale")
 scale.Parent = frame
@@ -147,6 +203,26 @@ local function render()
 		laneLine.Text = tacticKo
 	else
 		laneLine.Text = ""
+	end
+	-- 이벤트 그림: 있는 웨이브에만 배경으로 깐다. ID가 0이면 글자만 나온다.
+	local eventKey = data.plan and EVENT_ART[data.plan.event]
+	local art = eventKey and artOf(eventKey) or nil
+	if art then
+		artImage.Image = art
+		artLayer.Visible = true
+	else
+		artLayer.Visible = false
+	end
+	-- 디렉터 표식: muse 웨이브에만 배지 옆에 작게 붙인다.
+	local directorArt = artOf("BannerDirector")
+	if data.source == "muse" and directorArt then
+		directorBadge.Image = directorArt
+		directorBadge.Visible = true
+		local pos = frame.AbsolutePosition
+		local size = frame.AbsoluteSize
+		directorBadge.Position = UDim2.fromOffset(pos.X + size.X - 46, pos.Y + 6)
+	else
+		directorBadge.Visible = false
 	end
 end
 

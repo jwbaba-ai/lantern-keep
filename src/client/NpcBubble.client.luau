@@ -8,6 +8,19 @@ local Workspace = game:GetService("Workspace")
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local npcSay = remotes:WaitForChild("NpcSay")
 
+-- AssetIds가 Studio에 아직 없으면 초상화 없이 글자만 보여 준다.
+local assetIdsModule = ReplicatedStorage:WaitForChild("Shared"):FindFirstChild("AssetIds")
+local AssetIds = assetIdsModule and require(assetIdsModule) or nil
+
+local PORTRAIT_KEY = { bram = "PortraitBram", mira = "PortraitMira" }
+
+local function portraitOf(npcKey)
+	if AssetIds then
+		return AssetIds.imageOrNil(PORTRAIT_KEY[npcKey])
+	end
+	return nil
+end
+
 local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
 gui.Name = "NpcBubble"
@@ -19,7 +32,7 @@ local open = {} -- [npcKey] = { bubble, token }
 
 local function makeLabel(text, size, color, order)
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, -16, 0, size)
+	label.Size = UDim2.new(1, 0, 0, size)
 	label.BackgroundTransparency = 1
 	label.TextScaled = true
 	label.TextWrapped = true
@@ -53,14 +66,40 @@ local function showBubble(npcKey, text, isAI)
 	frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 	frame.BackgroundTransparency = 0.2
 	frame.Parent = bubble
-	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 2)
-	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	layout.VerticalAlignment = Enum.VerticalAlignment.Center
-	layout.Parent = frame
-	makeLabel(text, 44, Color3.new(1, 1, 1), 1).Parent = frame
+	local rowLayout = Instance.new("UIListLayout")
+	rowLayout.FillDirection = Enum.FillDirection.Horizontal
+	rowLayout.Padding = UDim.new(0, 6)
+	rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	rowLayout.Parent = frame
+	-- 말풍선 왼쪽에 초상화를 둔다. ID가 0이면 글자만 나온다.
+	local portraitArt = portraitOf(npcKey)
+	local portrait = Instance.new("ImageLabel")
+	portrait.Name = "Portrait"
+	portrait.Size = UDim2.new(0, 56, 0, 56)
+	portrait.BackgroundTransparency = 1
+	portrait.Image = portraitArt or ""
+	portrait.Visible = portraitArt ~= nil
+	portrait.LayoutOrder = 1
+	portrait.Parent = frame
+	local textCol = Instance.new("Frame")
+	textCol.Name = "TextCol"
+	textCol.BackgroundTransparency = 1
+	if portraitArt then
+		textCol.Size = UDim2.new(1, -78, 1, -8)
+	else
+		textCol.Size = UDim2.new(1, -16, 1, -8)
+	end
+	textCol.LayoutOrder = 2
+	textCol.Parent = frame
+	local colLayout = Instance.new("UIListLayout")
+	colLayout.Padding = UDim.new(0, 2)
+	colLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	colLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	colLayout.Parent = textCol
+	makeLabel(text, 44, Color3.new(1, 1, 1), 1).Parent = textCol
 	if isAI then
-		makeLabel("AI가 생성한 대사입니다", 18, Color3.fromRGB(160, 160, 160), 2).Parent = frame
+		makeLabel("AI가 생성한 대사입니다", 18, Color3.fromRGB(160, 160, 160), 2).Parent = textCol
 	end
 	bubble.Parent = gui
 	open[npcKey] = { bubble = bubble, token = token }

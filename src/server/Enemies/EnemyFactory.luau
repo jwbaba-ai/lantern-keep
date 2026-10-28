@@ -15,6 +15,10 @@ local EnemyFactory = {
 	TimePerHealth = 0.15, -- 초/체력. 테스트 처치까지 걸리는 시간 배율
 }
 
+-- 살아 있는 적 파트 -> { resolve, spec }. CombatService.damage가 이 표를
+-- 거쳐 처치하면 이동 루프와 테스트 타이머가 killed 경로로 정리된다.
+local active = {}
+
 local function getEnemiesFolder()
 	local f = workspace:FindFirstChild("Enemies")
 	if not f then
@@ -23,6 +27,28 @@ local function getEnemiesFolder()
 		f.Parent = workspace
 	end
 	return f
+end
+
+-- 적 폴더를 돌려준다 (없으면 만든다).
+function EnemyFactory.getFolder()
+	return getEnemiesFolder()
+end
+
+-- 적 파트에 피해를 준다. 전투 데미지의 유일한 입구다.
+-- 돌려값: "died"(처치됨), "alive"(생존), nil(이미 정리된 적).
+function EnemyFactory.damage(body, amount)
+	local entry = active[body]
+	if not entry or body.Parent == nil then
+		return nil
+	end
+	local hp = (body:GetAttribute("Health") or 0) - amount
+	if hp <= 0 then
+		body:SetAttribute("Health", 0)
+		entry.resolve("killed")
+		return "died"
+	end
+	body:SetAttribute("Health", hp)
+	return "alive"
 end
 
 function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved)
@@ -63,11 +89,13 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved)
 			return
 		end
 		resolved = true
+		active[body] = nil
 		if onResolved then
 			task.spawn(onResolved, enemyType, lane, how)
 		end
 		body:Destroy()
 	end
+	active[body] = { resolve = resolve, spec = spec }
 
 	-- 테스트 처치 타이머 (3일차에 실제 전투로 교체)
 	task.delay(spec.Health * EnemyFactory.TimePerHealth, function()

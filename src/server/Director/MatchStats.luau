@@ -11,6 +11,8 @@ function MatchStats.new()
 		killed = 0,
 		firstBreach = "",
 		revives = 0,
+		damage = {}, -- [userId] = 그 웨이브에 준 피해 합
+		deaths = {}, -- [userId] = 그 웨이브 사망 수
 	}
 end
 
@@ -27,6 +29,21 @@ function MatchStats.recordResolved(tracker, lane, how)
 	else
 		tracker.killed += 1
 	end
+end
+
+-- 공격자가 준 피해를 기록한다 (처치 여부와 무관하게 준 만큼 쌓는다).
+function MatchStats.recordDamage(tracker, player, amount)
+	local id = player.UserId
+	tracker.damage[id] = (tracker.damage[id] or 0) + amount
+end
+
+function MatchStats.recordDeath(tracker, player)
+	local id = player.UserId
+	tracker.deaths[id] = (tracker.deaths[id] or 0) + 1
+end
+
+function MatchStats.recordRevive(tracker)
+	tracker.revives += 1
 end
 
 -- waveNumber: 막 끝난 웨이브 번호. previousWave: { tactic, event }.

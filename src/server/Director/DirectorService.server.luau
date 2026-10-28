@@ -546,6 +546,12 @@ local matchNumber = 0
 local currentDay = 1
 while true do
 	matchNumber += 1
+	-- 디버그: debugSetDay(n)이 있으면 다음 판 Day를 n으로 정하고 한 번만 쓴다.
+	local debugDay = ReplicatedStorage:GetAttribute("DebugDay")
+	if type(debugDay) == "number" and debugDay >= 1 then
+		currentDay = math.floor(debugDay)
+		ReplicatedStorage:SetAttribute("DebugDay", nil)
+	end
 	print(string.format("[Director] match=%d day=%d start", matchNumber, currentDay))
 	local result = runMatch(matchNumber, currentDay)
 	if result == "victory" then

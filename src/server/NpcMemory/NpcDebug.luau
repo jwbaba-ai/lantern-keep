@@ -24,6 +24,17 @@ function NpcDebug.debugFastMatch()
 	print("[Npc] debugFastMatch: 남은 웨이브를 건너뛰고 승리로 끝낸다")
 end
 
+-- 디버그: 다음 판의 Day를 n으로 정한다.
+-- DirectorService가 다음 판 시작 때 읽고 한 번만 쓴다.
+-- debugFastMatch()와 함께 쓰면 Day 5 보스를 빨리 볼 수 있다.
+-- 실행법(Studio 명령줄):
+--   require(game.ServerScriptService.Server.NpcMemory["NpcDebug"]).debugSetDay(5)
+function NpcDebug.debugSetDay(n)
+	assert(type(n) == "number" and n >= 1 and math.floor(n) == n, "debugSetDay: n은 1 이상의 정수")
+	ReplicatedStorage:SetAttribute("DebugDay", n)
+	print("[Npc] debugSetDay: 다음 판 Day=" .. n)
+end
+
 function NpcDebug.debugEndMatch()
 	local userIds = {}
 	for _, player in ipairs(Players:GetPlayers()) do

@@ -115,7 +115,11 @@ local function playWave(map, lantern, wave, plan)
 		waited += 0.5
 	end
 	if tracker.arrived + tracker.killed < tracker.spawned then
-		warn("[Director] wave=" .. wave .. " timeout: 남은 적 정리 후 계속한다")
+		if lanternHealth(lantern) <= 0 then
+			print("[Director] wave=" .. wave .. " lantern destroyed: 남은 적 정리")
+		else
+			warn("[Director] wave=" .. wave .. " timeout: 남은 적 정리 후 계속한다")
+		end
 		for _, b in ipairs(bodies) do
 			if b.Parent ~= nil then
 				b:Destroy()

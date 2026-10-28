@@ -2,13 +2,15 @@
 -- spawn(enemyType, lane, waypoints, lantern, onResolved):
 --   waypoints를 순서대로 Tween 이동하고, 등불에 닿으면 등불 Health를 깎은 뒤 제거한다.
 --   onResolved(enemyType, lane, how) -- how는 "arrived" 또는 "killed".
--- 테스트용 처치: 생성 후 체력 비례 시간(Health * TimePerHealth)이 지나면 "killed"로
--- 처리한다. 3일차 실제 전투가 들어오면 이 타이머를 걷어낸다.
+-- 테스트용 처치: 플레이어가 없을 때만 생성 후 체력 비례 시간
+-- (Health * TimePerHealth)이 지나면 "killed"로 처리한다.
 -- (TimePerHealth=0.15이면 Brute만 등불까지 닿는다. FallbackWaves 주석 참고.)
+local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
 local EnemyCatalog = require(Shared:WaitForChild("EnemyCatalog"))
 
 local EnemyFactory = {
@@ -97,10 +99,13 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved)
 	end
 	active[body] = { resolve = resolve, spec = spec }
 
-	-- 테스트 처치 타이머 (3일차에 실제 전투로 교체)
-	task.delay(spec.Health * EnemyFactory.TimePerHealth, function()
-		resolve("killed")
-	end)
+	-- 테스트 처치 타이머: 플레이어가 없을 때(자동 테스트)만 쓴다.
+	-- 1명 이상 있으면 실제 전투로만 적이 쓰러진다.
+	if Config.AutoKillWhenNoPlayers and #Players:GetPlayers() == 0 then
+		task.delay(spec.Health * EnemyFactory.TimePerHealth, function()
+			resolve("killed")
+		end)
+	end
 
 	-- 레인 이동. 바깥에서 파트가 제거돼도 멈추도록 Parent를 확인한다.
 	task.spawn(function()

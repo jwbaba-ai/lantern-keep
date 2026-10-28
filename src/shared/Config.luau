@@ -9,6 +9,7 @@ return {
 	RequestTimeoutSeconds = 15,
 
 	-- Match
+	AutoKillWhenNoPlayers = true, -- 플레이어가 없으면(자동 테스트) 체력 비례 타이머로 적 처치
 	TotalWaves = 7,
 	IntermissionSeconds = 20,
 	LanternMaxHealth = 100,

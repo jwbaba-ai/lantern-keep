@@ -1,0 +1,31 @@
+-- 자동 생성 파일: 직접 고치지 말고 schemas/npc_memory.schema.json 수정 후
+-- python tools/gen_schema_luau.py 를 실행하세요.
+return {
+	["type"] = "object",
+	["additionalProperties"] = false,
+	["required"] = { "bram_memory", "mira_memory", "bram_lines", "mira_lines" },
+	["properties"] = {
+		["bram_memory"] = {
+			["type"] = "string",
+			["description"] = "Bram's 1-2 sentence memory of this party's battles (gates, waves, results). Use P1..P4 for players.",
+		},
+		["mira_memory"] = {
+			["type"] = "string",
+			["description"] = "Mira's 1-2 sentence memory of individual players (who revived, who fell, who hit hardest). Use P1..P4 for players.",
+		},
+		["bram_lines"] = {
+			["type"] = "array",
+			["items"] = {
+				["type"] = "string",
+			},
+			["description"] = "Exactly 3 short lines Bram will say next match: greeting, after wave 1, after wave 3.",
+		},
+		["mira_lines"] = {
+			["type"] = "array",
+			["items"] = {
+				["type"] = "string",
+			},
+			["description"] = "Exactly 3 short lines Mira will say next match: greeting, after wave 1, after wave 3.",
+		},
+	},
+}

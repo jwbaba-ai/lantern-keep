@@ -1,0 +1,22 @@
+{
+  "wave": 3,
+  "lantern_health_pct": 35,
+  "breached_lane": "east",
+  "revives": 2,
+  "players": [
+    {
+      "role": "ranger",
+      "damage": 5100,
+      "deaths": 3
+    },
+    {
+      "role": "arcanist",
+      "damage": 4700,
+      "deaths": 2
+    }
+  ],
+  "previous_wave": {
+    "tactic": "flank",
+    "event": "fog"
+  }
+}

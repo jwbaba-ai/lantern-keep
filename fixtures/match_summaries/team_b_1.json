@@ -1,0 +1,18 @@
+{
+  "wave": 1,
+  "lantern_health_pct": 80,
+  "breached_lane": "east",
+  "revives": 0,
+  "players": [
+    {
+      "role": "ranger",
+      "damage": 1800,
+      "deaths": 1
+    },
+    {
+      "role": "arcanist",
+      "damage": 1600,
+      "deaths": 1
+    }
+  ]
+}

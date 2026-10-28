@@ -1,0 +1,32 @@
+{
+  "wave": 2,
+  "lantern_health_pct": 78,
+  "breached_lane": "south",
+  "revives": 3,
+  "players": [
+    {
+      "role": "guardian",
+      "damage": 1500,
+      "deaths": 1
+    },
+    {
+      "role": "guardian",
+      "damage": 1300,
+      "deaths": 0
+    },
+    {
+      "role": "ranger",
+      "damage": 2600,
+      "deaths": 1
+    },
+    {
+      "role": "cleric",
+      "damage": 400,
+      "deaths": 0
+    }
+  ],
+  "previous_wave": {
+    "tactic": "focus_weak_lane",
+    "event": "none"
+  }
+}

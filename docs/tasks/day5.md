@@ -85,7 +85,7 @@
 - 커밋 후 `git push`(원격: origin/main). push가 실패하면 오류 메시지를 devlog에 적고 보고한다.
 
 ## 사람이 Studio에서 확인할 것 (devlog에 체크리스트로 복사)
-- [ ] Studio: 게임 설정 → Security → **Enable Studio Access to API Services** 켜기(DataStore 사용에 필요)
+- [x] Studio: **Enable Studio Access to API Services** 켜짐 (2026-10-28 크리에이터 허브에서 켬, Play 서버 DataStore 읽기 `ok=true`로 확인)
 - [ ] 명령줄에서 `NpcMemory.spec` 실행 → 모두 PASS
 - [ ] 첫 판: Bram·Mira가 등불 근처에 있고 기본 대사로 인사함(AI 고지 없음)
 - [ ] 명령줄 `debugEndMatch()` → Output에 `[Npc] summarize source=...`, `[Npc] saved events=1`

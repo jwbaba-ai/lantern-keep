@@ -261,9 +261,15 @@ local function onChanged()
 	lastPhase = data.phase
 	lastSource = data.source
 	lastData = data
-	-- 결과 화면이 맡는 동안은 배너를 숨긴다.
-	frame.Visible = data.phase ~= "result"
 	render()
+	-- 결과 화면이 맡는 동안은 배너 전체(글자·그림·표식)를 숨긴다.
+	-- render()가 그림·표식을 다시 켤 수 있어 뒤에서 덮는다.
+	local showBanner = data.phase ~= "result"
+	frame.Visible = showBanner
+	if not showBanner then
+		artLayer.Visible = false
+		directorBadge.Visible = false
+	end
 	refreshCountdown()
 end
 state.Changed:Connect(onChanged)

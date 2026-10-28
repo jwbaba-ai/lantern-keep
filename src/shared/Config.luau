@@ -13,6 +13,7 @@ return {
 	TotalWaves = 7,
 	IntermissionSeconds = 20,
 	MatchStartWaitSeconds = 20, -- 웨이브 1 전 로비 대기 상한(초). 지나도 0명이면 자동 테스트로 진행
+	MatchRestartSeconds = 15, -- 결과 화면을 보여 주는 시간(초). 기억 저장이 더 오래 걸리면 그만큼 더 기다린다
 	LanternMaxHealth = 100,
 	MinEnemies = 4,
 	MaxEnemies = 30,

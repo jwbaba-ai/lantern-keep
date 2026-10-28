@@ -59,11 +59,26 @@ function DirectorState.filterOrFallback(text, fallback, filterFn)
 end
 
 -- 화면용 상태 테이블을 만든다.
--- args: phase("wave"|"intermission"), displayWave, source, plan(설계 중이면 nil),
---   waveName·directorNote(설계 중이면 nil → 고정 문구), intermissionEndsAt, filterFn(테스트용).
+-- args: phase("wave"|"intermission"|"lobby"|"result"), displayWave, source,
+--   plan(설계 중이면 nil), waveName·directorNote(설계 중이면 nil → 고정 문구),
+--   intermissionEndsAt, filterFn(테스트용).
+--   phase가 "result"면 고정 문구만 쓴다(필터 불필요):
+--   result("victory"|"defeat"), wavesCompleted, lanternHealthPct를 함께 담는다.
 function DirectorState.buildState(args)
 	local displayName, displayNote
-	if args.waveName == nil then
+	if args.phase == "result" then
+		if args.result == "victory" then
+			displayName = "승리!"
+		else
+			displayName = "등불이 꺼졌다…"
+		end
+		displayNote = string.format(
+			"%d웨이브 중 %d웨이브 생존 · 등불 체력 %d%%",
+			Config.TotalWaves,
+			args.wavesCompleted or 0,
+			args.lanternHealthPct or 0
+		)
+	elseif args.waveName == nil then
 		displayName = DirectorState.DESIGNING_TEXT
 		displayNote = ""
 	else
@@ -88,6 +103,11 @@ function DirectorState.buildState(args)
 		lanes = { north = 0, south = 0, east = 0, west = 0 },
 		intermission_ends_at = args.intermissionEndsAt or 0,
 	}
+	if args.phase == "result" then
+		state.result = args.result
+		state.waves_completed = args.wavesCompleted or 0
+		state.lantern_health_pct = args.lanternHealthPct or 0
+	end
 	if args.plan ~= nil then
 		state.plan = args.plan
 		state.lanes = DirectorState.lanesOf(args.plan)

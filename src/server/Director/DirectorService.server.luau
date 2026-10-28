@@ -1,7 +1,11 @@
 -- 경기 흐름 (단일 기준: docs/GAME_DESIGN.md 한 판의 흐름).
+-- 서버가 살아 있는 동안 runMatch()를 반복한다:
+-- 로비 -> 웨이브 1~TotalWaves -> 결과(phase="result") -> NPC 기억 저장 ->
+-- MatchRestartSeconds 결과 화면 -> 초기화 -> 로비부터 다시.
 -- 웨이브 1~TotalWaves 반복: 진행 -> 종료 -> 요약 -> 대기 시작과 동시에 다음 웨이브 요청.
 -- 통과한 계획은 적용하고, 실패(nil·검증 실패)하면 FallbackWaves를 쓴다. 경기는 절대 멈추지 않는다.
--- 웨이브 시작·대기 상태를 DirectorState(JSON)로 알리고, 이벤트 효과는 EventEffects가 적용·복원한다.
+-- 웨이브 시작·대기·결과 상태를 DirectorState(JSON)로 알리고,
+-- 이벤트 효과는 EventEffects가 적용·복원한다.
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -66,6 +70,16 @@ local function intermissionEndsAt(secondsLeft)
 	return Workspace:GetServerTimeNow() + math.max(0, secondsLeft)
 end
 
+-- 디버그 "남은 웨이브 건너뛰기" 플래그 (NpcDebug.debugFastMatch()가 켠다).
+-- 실제 경기 흐름 코드는 그대로 쓰고, 이 플래그만 확인한다.
+local function fastMatchRequested()
+	return ReplicatedStorage:GetAttribute("DebugFastMatch") == true
+end
+
+local function clearFastMatch()
+	ReplicatedStorage:SetAttribute("DebugFastMatch", false)
+end
+
 local function getWaypoints(map, lane)
 	local folder = map:WaitForChild("Lanes"):WaitForChild(lane)
 	local parts = {}
@@ -103,7 +117,7 @@ local function playWave(map, lantern, wave, plan)
 
 	for _, entry in ipairs(plan.enemies) do
 		for _ = 1, entry.count do
-			if lanternHealth(lantern) <= 0 then
+			if lanternHealth(lantern) <= 0 or fastMatchRequested() then
 				break
 			end
 			local body = EnemyFactory.spawn(
@@ -120,14 +134,14 @@ local function playWave(map, lantern, wave, plan)
 			end
 			task.wait(spawnInterval)
 		end
-		if lanternHealth(lantern) <= 0 then
+		if lanternHealth(lantern) <= 0 or fastMatchRequested() then
 			break
 		end
 	end
 
 	local waited = 0
 	while tracker.arrived + tracker.killed < tracker.spawned and waited < WAVE_TIMEOUT do
-		if lanternHealth(lantern) <= 0 then
+		if lanternHealth(lantern) <= 0 or fastMatchRequested() then
 			break
 		end
 		task.wait(0.5)
@@ -136,7 +150,7 @@ local function playWave(map, lantern, wave, plan)
 	if tracker.arrived + tracker.killed < tracker.spawned then
 		if lanternHealth(lantern) <= 0 then
 			print("[Director] wave=" .. wave .. " lantern destroyed: 남은 적 정리")
-		else
+		elseif not fastMatchRequested() then
 			warn("[Director] wave=" .. wave .. " timeout: 남은 적 정리 후 계속한다")
 		end
 		for _, b in ipairs(bodies) do
@@ -164,170 +178,241 @@ if not state then
 	state.Parent = ReplicatedStorage
 end
 
--- 로비: 1명 이상 들어오고 모두 직업을 고를 때까지 기다린다.
--- 최대 MatchStartWaitSeconds까지만 기다리고, 그래도 0명이면 자동 테스트로 진행한다.
-local function lobbyReady()
-	local players = Players:GetPlayers()
-	if #players == 0 then
-		return false
-	end
-	for _, player in ipairs(players) do
-		if player:GetAttribute("Class") == nil then
-			return false
+-- 다음 판 준비: 등불 체력 100, 남은 적 제거, 이벤트 효과 복원, 성문 강조 끄기.
+local function resetForNextMatch()
+	lantern:SetAttribute("Health", Config.LanternMaxHealth)
+	local enemies = Workspace:FindFirstChild("Enemies")
+	if enemies then
+		for _, child in ipairs(enemies:GetChildren()) do
+			child:Destroy()
 		end
 	end
-	return true
-end
-local lobbyEndsAt = Workspace:GetServerTimeNow() + (Config.MatchStartWaitSeconds or 20)
-DirectorState.publish(state, {
-	phase = "lobby",
-	displayWave = 1,
-	source = "pending",
-	plan = nil,
-	waveName = "곧 시작합니다",
-	directorNote = "",
-	intermissionEndsAt = lobbyEndsAt,
-})
-while not lobbyReady() and Workspace:GetServerTimeNow() < lobbyEndsAt do
-	task.wait(0.5)
-end
-
--- NPC 기억용 경기 기록. P 슬롯은 로비 종료 시점 명단으로 배정한다.
-local startIds = {}
-for _, player in ipairs(Players:GetPlayers()) do
-	table.insert(startIds, player.UserId)
-end
-local matchRecord = MatchRecord.new(startIds)
-
-local currentPlan = FallbackWaves[1]
-local currentSource = "fallback"
-local wavesCompleted = 0
-
-for wave = 1, Config.TotalWaves do
-	if lanternHealth(lantern) <= 0 then
-		break
-	end
-	-- 파티 인원 보정: 검증 통과 뒤 적용 직전에 적 수를 줄인다 (요약은 그대로).
-	local partySize = #Players:GetPlayers()
-	local playPlan, scaledTotal = PartyScale.scalePlan(currentPlan, partySize)
-	print(string.format(
-		"[Director] wave=%d party=%d scaled_enemies=%d",
-		wave,
-		partySize,
-		scaledTotal
-	))
-	logPlan(wave, currentSource, playPlan)
-	-- 웨이브 시작: 성문 강조를 끄고 원래 색으로 되돌린다.
+	EventEffects.clear()
 	GateHighlight.stop(map)
+	CombatService.endWave()
+end
+
+local function publishResult(wavesCompleted, source, result, endsAt)
 	DirectorState.publish(state, {
-		phase = "wave",
-		displayWave = wave,
-		source = currentSource,
-		plan = playPlan,
-		waveName = playPlan.wave_name,
-		directorNote = playPlan.director_note,
-		intermissionEndsAt = 0,
-	})
-
-	local tracker = playWave(map, lantern, wave, playPlan)
-	wavesCompleted = wave
-
-	if lanternHealth(lantern) <= 0 then
-		break
-	end
-	if wave == Config.TotalWaves then
-		break
-	end
-
-	-- 대기 시작과 동시에 다음 웨이브 요청 (전투 중 호출 금지: 웨이브 사이만).
-	local roster = {}
-	for _, player in ipairs(Players:GetPlayers()) do
-		table.insert(roster, {
-			userId = player.UserId,
-			role = player:GetAttribute("Class") or "guardian",
-		})
-	end
-	local summary = MatchStats.buildSummary(tracker, wave, lanternHealthPct(lantern), {
-		tactic = currentPlan.tactic,
-		event = currentPlan.event,
-	}, roster)
-	local okSummary, summaryJson = pcall(HttpService.JSONEncode, HttpService, summary)
-	if okSummary then
-		print("[MatchStats] " .. summaryJson)
-	end
-	MatchRecord.recordWave(matchRecord, summary, MatchRecord.perPlayerFromTracker(tracker, roster))
-	local started = os.clock()
-	-- 대기 시작 직후 (디렉터 응답 전): 다음 웨이브는 설계 중 문구로 알린다.
-	DirectorState.publish(state, {
-		phase = "intermission",
-		displayWave = wave + 1,
-		source = "pending",
+		phase = "result",
+		displayWave = wavesCompleted,
+		source = source,
 		plan = nil,
 		waveName = nil,
 		directorNote = nil,
-		intermissionEndsAt = intermissionEndsAt(Config.IntermissionSeconds),
+		intermissionEndsAt = endsAt,
+		result = result,
+		wavesCompleted = wavesCompleted,
+		lanternHealthPct = lanternHealthPct(lantern),
 	})
-	local nextPlan = FallbackWaves[wave + 1]
-	local nextSource = "fallback"
-	local requested = DirectorClient.requestNextWave(summary)
-	if requested then
-		local ok, clean, errs = WaveValidator.validate(requested, wave + 1)
-		if ok and clean then
-			nextPlan = clean
-			nextSource = "muse"
-			for _, e in ipairs(errs) do
-				warn("[Director] wave=" .. (wave + 1) .. " auto-fix: " .. e)
+end
+
+-- 경기 한 판: 로비 -> 웨이브 -> 결과 -> 기억 저장 -> 결과 화면 -> 초기화.
+-- 플레이어의 직업은 판이 바뀌어도 유지하고, 다시 고르지 않는다.
+local function runMatch(matchNumber)
+	-- 로비: 1명 이상 들어오고 모두 직업을 고를 때까지 기다린다.
+	-- 최대 MatchStartWaitSeconds까지만 기다리고, 그래도 0명이면 자동 테스트로 진행한다.
+	local function lobbyReady()
+		local players = Players:GetPlayers()
+		if #players == 0 then
+			return false
+		end
+		for _, player in ipairs(players) do
+			if player:GetAttribute("Class") == nil then
+				return false
 			end
-		else
-			warn("[Director] wave=" .. (wave + 1) .. " plan rejected: " .. table.concat(errs, " / "))
+		end
+		return true
+	end
+	local lobbyEndsAt = Workspace:GetServerTimeNow() + (Config.MatchStartWaitSeconds or 20)
+	DirectorState.publish(state, {
+		phase = "lobby",
+		displayWave = 1,
+		source = "pending",
+		plan = nil,
+		waveName = "곧 시작합니다",
+		directorNote = "",
+		intermissionEndsAt = lobbyEndsAt,
+	})
+	while not lobbyReady() and Workspace:GetServerTimeNow() < lobbyEndsAt and not fastMatchRequested() do
+		task.wait(0.5)
+	end
+
+	-- NPC 기억용 경기 기록. P 슬롯·파티 키·partySize는 로비 종료 시점 명단 하나다.
+	local startIds = {}
+	for _, player in ipairs(Players:GetPlayers()) do
+		table.insert(startIds, player.UserId)
+	end
+	local matchRecord = MatchRecord.new(startIds)
+	-- 판 번호: NpcService가 바뀔 때마다 기억을 다시 불러와 다음 판 인사를 준비한다.
+	ReplicatedStorage:SetAttribute("MatchNumber", matchNumber)
+
+	local currentPlan = FallbackWaves[1]
+	local currentSource = "fallback"
+	local wavesCompleted = 0
+
+	for wave = 1, Config.TotalWaves do
+		if fastMatchRequested() then
+			clearFastMatch()
+			break
+		end
+		if lanternHealth(lantern) <= 0 then
+			break
+		end
+		-- 파티 인원 보정: 검증 통과 뒤 적용 직전에 적 수를 줄인다 (요약은 그대로).
+		local partySize = #Players:GetPlayers()
+		local playPlan, scaledTotal = PartyScale.scalePlan(currentPlan, partySize)
+		print(string.format(
+			"[Director] wave=%d party=%d scaled_enemies=%d",
+			wave,
+			partySize,
+			scaledTotal
+		))
+		logPlan(wave, currentSource, playPlan)
+		-- 웨이브 시작: 성문 강조를 끄고 원래 색으로 되돌린다.
+		GateHighlight.stop(map)
+		DirectorState.publish(state, {
+			phase = "wave",
+			displayWave = wave,
+			source = currentSource,
+			plan = playPlan,
+			waveName = playPlan.wave_name,
+			directorNote = playPlan.director_note,
+			intermissionEndsAt = 0,
+		})
+
+		local tracker = playWave(map, lantern, wave, playPlan)
+		wavesCompleted = wave
+
+		if lanternHealth(lantern) <= 0 then
+			break
+		end
+		if fastMatchRequested() then
+			clearFastMatch()
+			break
+		end
+		if wave == Config.TotalWaves then
+			break
+		end
+
+		-- 대기 시작과 동시에 다음 웨이브 요청 (전투 중 호출 금지: 웨이브 사이만).
+		local roster = {}
+		for _, player in ipairs(Players:GetPlayers()) do
+			table.insert(roster, {
+				userId = player.UserId,
+				role = player:GetAttribute("Class") or "guardian",
+			})
+		end
+		local summary = MatchStats.buildSummary(tracker, wave, lanternHealthPct(lantern), {
+			tactic = currentPlan.tactic,
+			event = currentPlan.event,
+		}, roster)
+		local okSummary, summaryJson = pcall(HttpService.JSONEncode, HttpService, summary)
+		if okSummary then
+			print("[MatchStats] " .. summaryJson)
+		end
+		MatchRecord.recordWave(matchRecord, summary, MatchRecord.perPlayerFromTracker(tracker, roster))
+		local started = os.clock()
+		-- 대기 시작 직후 (디렉터 응답 전): 다음 웨이브는 설계 중 문구로 알린다.
+		DirectorState.publish(state, {
+			phase = "intermission",
+			displayWave = wave + 1,
+			source = "pending",
+			plan = nil,
+			waveName = nil,
+			directorNote = nil,
+			intermissionEndsAt = intermissionEndsAt(Config.IntermissionSeconds),
+		})
+		local nextPlan = FallbackWaves[wave + 1]
+		local nextSource = "fallback"
+		local requested = DirectorClient.requestNextWave(summary)
+		if requested then
+			local ok, clean, errs = WaveValidator.validate(requested, wave + 1)
+			if ok and clean then
+				nextPlan = clean
+				nextSource = "muse"
+				for _, e in ipairs(errs) do
+					warn("[Director] wave=" .. (wave + 1) .. " auto-fix: " .. e)
+				end
+			else
+				warn("[Director] wave=" .. (wave + 1) .. " plan rejected: " .. table.concat(errs, " / "))
+			end
+		end
+		currentPlan = nextPlan
+		currentSource = nextSource
+
+		local rest = Config.IntermissionSeconds - (os.clock() - started)
+		-- 디렉터 응답 또는 대체 웨이브 확정: 다음 웨이브 정보로 갱신한다.
+		-- 대기 중 미리보기에도 웨이브 시작 때와 같은 PartyScale 보정을 쓴다
+		-- (시작 시점에 인원이 바뀌면 그때 다시 보정한다).
+		local previewPlan = PartyScale.scalePlan(nextPlan, #Players:GetPlayers())
+		DirectorState.publish(state, {
+			phase = "intermission",
+			displayWave = wave + 1,
+			source = nextSource,
+			plan = previewPlan,
+			waveName = nextPlan.wave_name,
+			directorNote = nextPlan.director_note,
+			intermissionEndsAt = intermissionEndsAt(rest),
+		})
+		-- 다음 웨이브가 정해지면 대기 시간 동안 공격 성문을 깜빡인다.
+		GateHighlight.start(map, DirectorState.lanesOf(previewPlan))
+		local restLeft = rest
+		while restLeft > 0 do
+			if fastMatchRequested() then
+				break
+			end
+			local step = math.min(0.5, restLeft)
+			task.wait(step)
+			restLeft -= step
 		end
 	end
-	currentPlan = nextPlan
-	currentSource = nextSource
 
-	local rest = Config.IntermissionSeconds - (os.clock() - started)
-	-- 디렉터 응답 또는 대체 웨이브 확정: 다음 웨이브 정보로 갱신한다.
-	-- 대기 중 미리보기에도 웨이브 시작 때와 같은 PartyScale 보정을 쓴다
-	-- (시작 시점에 인원이 바뀌면 그때 다시 보정한다).
-	local previewPlan = PartyScale.scalePlan(nextPlan, #Players:GetPlayers())
-	DirectorState.publish(state, {
-		phase = "intermission",
-		displayWave = wave + 1,
-		source = nextSource,
-		plan = previewPlan,
-		waveName = nextPlan.wave_name,
-		directorNote = nextPlan.director_note,
-		intermissionEndsAt = intermissionEndsAt(rest),
-	})
-	-- 다음 웨이브가 정해지면 대기 시간 동안 공격 성문을 깜빡인다.
-	GateHighlight.start(map, DirectorState.lanesOf(previewPlan))
-	if rest > 0 then
-		task.wait(rest)
-	end
-end
-
--- NPC 기억: 이번 경기 기록을 저장하고 다음 판 대사를 미리 받아 둔다.
--- 모델 호출은 경기가 끝난 뒤 1회만. 실패해도 경기 흐름은 막지 않는다.
--- 파티 키·partySize는 로비 종료 시점 명단(startIds) 하나로 정한다.
--- 종료 시점의 Players:GetPlayers()는 쓰지 않는다 (중간 입장자 제외).
-local function finishNpcMemory(result, startIds)
-	npcSaveInProgress = true
-	local ok, err = pcall(function()
-		MemoryStore.finishAndSave(matchRecord, result, wavesCompleted, startIds, function(previous, events)
-			return NpcClient.summarize(previous, events)
+	-- NPC 기억: 이번 경기 기록을 저장하고 다음 판 대사를 미리 받아 둔다.
+	-- 모델 호출은 경기가 끝난 뒤 1회만. 실패해도 경기 흐름은 막지 않는다.
+	-- 파티 키·partySize는 로비 종료 시점 명단(startIds) 하나로 정한다.
+	-- 종료 시점의 Players:GetPlayers()는 쓰지 않는다 (중간 입장자 제외).
+	local function finishNpcMemory(result, record, completedWaves, startIds)
+		npcSaveInProgress = true
+		local ok, err = pcall(function()
+			MemoryStore.finishAndSave(record, result, completedWaves, startIds, function(previous, events)
+				return NpcClient.summarize(previous, events)
+			end)
 		end)
-	end)
-	npcSaveInProgress = false
-	if not ok then
-		warn("[Npc] 경기 종료 처리 실패: " .. tostring(err))
+		npcSaveInProgress = false
+		if not ok then
+			warn("[Npc] 경기 종료 처리 실패: " .. tostring(err))
+		end
 	end
+
+	GateHighlight.stop(map)
+	local result = "victory"
+	if lanternHealth(lantern) <= 0 then
+		result = "defeat"
+	end
+	print("[Director] match over result=" .. result .. " waves_completed=" .. wavesCompleted)
+
+	-- 1. 결과 알림 (카운트다운 끝 시각은 저장 뒤에 확정한다).
+	publishResult(wavesCompleted, currentSource, result, 0)
+	-- 2. 경기 종료 처리(NPC 기억 요약·저장)를 끝까지 기다린다.
+	finishNpcMemory(result, matchRecord, wavesCompleted, startIds)
+	-- 3. 결과 화면을 MatchRestartSeconds초 보여 준다. 저장이 더 오래 걸리면 그만큼 늦게 시작한다.
+	local restartSeconds = Config.MatchRestartSeconds or 15
+	publishResult(wavesCompleted, currentSource, result, intermissionEndsAt(restartSeconds))
+	task.wait(restartSeconds)
+	-- 4. 다음 판 초기화. 직업은 유지한다.
+	resetForNextMatch()
 end
 
-GateHighlight.stop(map)
-if lanternHealth(lantern) <= 0 then
-	print("[Director] match over result=defeat waves_completed=" .. wavesCompleted)
-	finishNpcMemory("defeat", startIds)
-else
-	print("[Director] match over result=victory waves_completed=" .. wavesCompleted)
-	finishNpcMemory("victory", startIds)
+ReplicatedStorage:SetAttribute("MatchNumber", 0)
+local matchNumber = 0
+while true do
+	matchNumber += 1
+	print(string.format("[Director] match=%d start", matchNumber))
+	runMatch(matchNumber)
+	-- 플레이어가 0명이면(자동 테스트) 한 판만 돌고 멈춘다. 지금과 같은 동작이다.
+	if #Players:GetPlayers() == 0 then
+		print("[Director] no players after match: 한 판만 돌고 멈춘다")
+		break
+	end
 end

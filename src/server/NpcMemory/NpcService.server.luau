@@ -172,3 +172,16 @@ state.Changed:Connect(onState)
 if state.Value ~= "" then
 	onState()
 end
+
+-- 판이 바뀌면 기억을 다시 불러와 대사를 준비한다.
+-- DirectorService가 로비 종료 뒤에 MatchNumber를 올리므로,
+-- 이 시점 명단이 곧 이번 판 명단이다. 방금 저장한 대사가 다음 판 인사로 나온다.
+local function onMatchChanged()
+	saidGreeting, saidAfterWave1, saidAfterWave3 = false, false, false
+	matchLoaded = true
+	loadForMatch()
+end
+ReplicatedStorage:GetAttributeChangedSignal("MatchNumber"):Connect(onMatchChanged)
+if (ReplicatedStorage:GetAttribute("MatchNumber") or 0) >= 1 then
+	onMatchChanged()
+end

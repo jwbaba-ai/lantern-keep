@@ -144,4 +144,29 @@ do
 	check("scaled_plan_lanes_match", sum == totalOf(scaled))
 end
 
+-- 6. 결과 상태: 고정 문구 + 결과 필드.
+do
+	local data = DirectorState.buildState({
+		phase = "result",
+		displayWave = 7,
+		source = "muse",
+		plan = nil,
+		waveName = nil,
+		directorNote = nil,
+		intermissionEndsAt = 789.0,
+		filterFn = failingFilter,
+		result = "victory",
+		wavesCompleted = 7,
+		lanternHealthPct = 62,
+	})
+	check(
+		"result_state",
+		data.display_name == "승리!"
+			and data.result == "victory"
+			and data.waves_completed == 7
+			and data.lantern_health_pct == 62
+			and string.find(data.display_note, "7웨이브 중 7웨이브 생존") ~= nil
+	)
+end
+
 return results

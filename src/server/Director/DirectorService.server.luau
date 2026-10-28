@@ -14,6 +14,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local FallbackWaves = require(Shared:WaitForChild("FallbackWaves"))
+local ClassCatalog = require(Shared:WaitForChild("ClassCatalog"))
 
 local WorldFolder = script.Parent.Parent:WaitForChild("World")
 local GateHighlight = require(WorldFolder:WaitForChild("GateHighlight"))
@@ -178,9 +179,21 @@ if not state then
 	state.Parent = ReplicatedStorage
 end
 
--- 다음 판 준비: 등불 체력 100, 남은 적 제거, 이벤트 효과 복원, 성문 강조 끄기.
+-- 다음 판 준비: 등불 체력 100, 남은 적 제거, 이벤트 효과 복원, 성문 강조 끄기,
+-- 살아 있는 플레이어 체력을 직업 최대 체력으로 채우기 (죽은 자는 리스폰에 맡긴다).
 local function resetForNextMatch()
 	lantern:SetAttribute("Health", Config.LanternMaxHealth)
+	for _, player in ipairs(Players:GetPlayers()) do
+		local classKey = player:GetAttribute("Class")
+		local spec = classKey and ClassCatalog[classKey] or nil
+		if spec then
+			local character = player.Character
+			local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+			if humanoid and humanoid.Health > 0 then
+				humanoid.Health = spec.MaxHealth
+			end
+		end
+	end
 	local enemies = Workspace:FindFirstChild("Enemies")
 	if enemies then
 		for _, child in ipairs(enemies:GetChildren()) do

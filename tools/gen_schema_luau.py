@@ -34,7 +34,7 @@ def main():
         out = ("-- 자동 생성 파일: 직접 고치지 말고 " + schema_rel + " 수정 후\n"
                "-- python tools/gen_schema_luau.py 를 실행하세요.\n"
                f"return {to_luau(schema)}\n")
-        with open(os.path.join(ROOT, out_rel), "w", encoding="utf-8") as f:
+        with open(os.path.join(ROOT, out_rel), "w", encoding="utf-8", newline="\n") as f:
             f.write(out)
         print("generated " + out_rel)
 

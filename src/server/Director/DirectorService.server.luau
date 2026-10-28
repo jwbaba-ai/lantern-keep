@@ -17,6 +17,8 @@ local GateHighlight = require(WorldFolder:WaitForChild("GateHighlight"))
 local DirectorFolder = script.Parent
 local NpcMemoryFolder = DirectorFolder.Parent:WaitForChild("NpcMemory")
 local MatchRecord = require(NpcMemoryFolder:WaitForChild("MatchRecord"))
+local MemoryStore = require(NpcMemoryFolder:WaitForChild("MemoryStore"))
+local NpcClient = require(NpcMemoryFolder:WaitForChild("NpcClient"))
 local EventEffects = require(DirectorFolder:WaitForChild("EventEffects"))
 local DirectorClient = require(DirectorFolder:WaitForChild("DirectorClient"))
 local WaveValidator = require(DirectorFolder:WaitForChild("WaveValidator"))
@@ -293,9 +295,40 @@ for wave = 1, Config.TotalWaves do
 	end
 end
 
+-- NPC 기억: 이번 경기 기록을 저장하고 다음 판 대사를 미리 받아 둔다.
+-- 모델 호출은 경기가 끝난 뒤 1회만. 실패해도 경기 흐름은 막지 않는다.
+local function finishNpcMemory(result)
+	local ok, err = pcall(function()
+		MatchRecord.finish(matchRecord, result, wavesCompleted)
+		local userIds = {}
+		for _, player in ipairs(Players:GetPlayers()) do
+			table.insert(userIds, player.UserId)
+		end
+		local store = MemoryStore.getStore()
+		local key = MemoryStore.partyKey(userIds)
+		local saved = MemoryStore.load(store, key) or {}
+		local newSaved, source = MemoryStore.finishMatch(
+			saved,
+			MatchRecord.toEvent(matchRecord),
+			#userIds,
+			function(previous, events)
+				return NpcClient.summarize(previous, events)
+			end
+		)
+		MemoryStore.save(store, key, newSaved)
+		print(string.format("[Npc] summarize source=%s party_size=%d", source, #userIds))
+		print(string.format("[Npc] saved events=%d", #newSaved.events))
+	end)
+	if not ok then
+		warn("[Npc] 경기 종료 처리 실패: " .. tostring(err))
+	end
+end
+
 GateHighlight.stop(map)
 if lanternHealth(lantern) <= 0 then
 	print("[Director] match over result=defeat waves_completed=" .. wavesCompleted)
+	finishNpcMemory("defeat")
 else
 	print("[Director] match over result=victory waves_completed=" .. wavesCompleted)
+	finishNpcMemory("victory")
 end

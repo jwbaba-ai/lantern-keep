@@ -116,4 +116,24 @@ do
 	)
 end
 
+-- 11. 중간 입장자는 슬롯이 없고, 키는 시작 명단 기준.
+do
+	local record = MatchRecord.new({ 10, 20 })
+	MatchRecord.recordWave(
+		record,
+		{ wave = 1, breached_lane = "north", lantern_health_pct = 90, revives = 0 },
+		{
+			{ userId = 10, role = "guardian", damage = 100, deaths = 0, revives_given = 0 },
+			{ userId = 30, role = "ranger", damage = 50, deaths = 0, revives_given = 0 },
+		}
+	)
+	check(
+		"late_joiner_no_slot",
+		record.slots[30] == nil
+			and record.players[30] == nil
+			and record.slots[10] == "P1"
+			and MemoryStore.partyKey({ 10, 20 }) == "party_10_20"
+	)
+end
+
 return results

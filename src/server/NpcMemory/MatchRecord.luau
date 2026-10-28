@@ -2,8 +2,9 @@
 -- DirectorService가 웨이브마다 만드는 MatchStats 요약을 받아 쌓는다.
 -- 웨이브별: wave, breached_lane, lantern_health_pct, revives.
 -- 플레이어별 누적: { slot, role, damage, deaths, revives_given }.
--- P1~P4 슬롯은 userId 오름차순으로 붙인다. 늦게 들어온 플레이어는
--- 다음 빈 슬롯을 받는다. 이름·userId는 toEvent에서 뺀다.
+-- P1~P4 슬롯은 로비 종료 시점 명단(userId 오름차순)으로 붙인다.
+-- 중간에 들어온 플레이어는 슬롯이 없고 기록에 넣지 않는다.
+-- 이름·userId는 toEvent에서 뺀다.
 local MatchRecord = {}
 
 -- userIds 배열로 새 기록을 시작하고 슬롯을 배정한다.
@@ -20,20 +21,6 @@ function MatchRecord.new(userIds)
 		record.players[id] = { slot = slot, role = nil, damage = 0, deaths = 0, revives_given = 0 }
 	end
 	return record
-end
-
--- 플레이어의 슬롯을 돌려준다. 없으면 다음 빈 슬롯을 배정한다.
-function MatchRecord.ensureSlot(record, userId)
-	if record.slots[userId] == nil then
-		local n = 0
-		for _ in pairs(record.slots) do
-			n += 1
-		end
-		local slot = "P" .. (n + 1)
-		record.slots[userId] = slot
-		record.players[userId] = { slot = slot, role = nil, damage = 0, deaths = 0, revives_given = 0 }
-	end
-	return record.slots[userId]
 end
 
 -- tracker에서 웨이브별 플레이어 실적을 뽑는다.
@@ -64,12 +51,14 @@ function MatchRecord.recordWave(record, summary, perPlayer)
 		revives = summary.revives,
 	})
 	for _, entry in ipairs(perPlayer or {}) do
-		MatchRecord.ensureSlot(record, entry.userId)
+		-- 시작 명단에 없는 userId(중간 입장자)는 기록하지 않는다.
 		local agg = record.players[entry.userId]
-		agg.role = entry.role or agg.role
-		agg.damage += (entry.damage or 0)
-		agg.deaths += (entry.deaths or 0)
-		agg.revives_given += (entry.revives_given or 0)
+		if agg ~= nil then
+			agg.role = entry.role or agg.role
+			agg.damage += (entry.damage or 0)
+			agg.deaths += (entry.deaths or 0)
+			agg.revives_given += (entry.revives_given or 0)
+		end
 	end
 end
 

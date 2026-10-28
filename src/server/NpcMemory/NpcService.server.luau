@@ -76,33 +76,43 @@ for _, npc in ipairs(NPCS) do
 	end
 end
 
--- 현재 파티의 슬롯 → DisplayName. 슬롯은 userId 오름차순으로 P1부터.
-local function slotNames()
+-- 이번 판 명단(로비 종료 시점 스냅샷, userId 오름차순)과 불러온 기억 캐시.
+-- 중간에 들어온 플레이어는 명단에 넣지 않는다.
+local matchIds = {}
+local savedCache = nil
+local matchLoaded = false
+
+local function loadForMatch()
 	local ids = {}
 	for _, player in ipairs(Players:GetPlayers()) do
 		table.insert(ids, player.UserId)
 	end
 	table.sort(ids)
+	matchIds = ids
+	savedCache = nil
+	local storeOk, store = pcall(MemoryStore.getStore)
+	if storeOk and store ~= nil then
+		savedCache = MemoryStore.load(store, MemoryStore.partyKey(matchIds))
+	end
+end
+
+local function ensureLoaded()
+	if not matchLoaded then
+		matchLoaded = true
+		loadForMatch()
+	end
+end
+
+-- 시작 명단의 슬롯 → DisplayName. 슬롯은 userId 오름차순으로 P1부터.
+local function slotNames()
 	local names = {}
-	for i, id in ipairs(ids) do
+	for i, id in ipairs(matchIds) do
 		local player = Players:GetPlayerByUserId(id)
 		if player then
 			names["P" .. i] = player.DisplayName
 		end
 	end
-	return names, #ids
-end
-
-local function loadSaved()
-	local userIds = {}
-	for _, player in ipairs(Players:GetPlayers()) do
-		table.insert(userIds, player.UserId)
-	end
-	local storeOk, store = pcall(MemoryStore.getStore)
-	if not storeOk or store == nil then
-		return nil
-	end
-	return MemoryStore.load(store, MemoryStore.partyKey(userIds))
+	return names, #matchIds
 end
 
 local function filterLine(text)
@@ -113,10 +123,11 @@ local function filterLine(text)
 end
 
 local function say(npcKey, lineIndex)
+	ensureLoaded()
 	local names, partySize = slotNames()
 	local defaults = Config.NpcDefaultLines and Config.NpcDefaultLines[npcKey]
 	local defaultLine = (defaults and defaults[lineIndex]) or "..."
-	local saved = loadSaved()
+	local saved = savedCache
 	local lines = saved and saved[LINES_KEY[npcKey]]
 	local text, isAI = NpcSpeech.resolveLine(
 		lines and lines[lineIndex] or nil,

@@ -308,14 +308,12 @@ end
 
 -- NPC 기억: 이번 경기 기록을 저장하고 다음 판 대사를 미리 받아 둔다.
 -- 모델 호출은 경기가 끝난 뒤 1회만. 실패해도 경기 흐름은 막지 않는다.
-local function finishNpcMemory(result)
+-- 파티 키·partySize는 로비 종료 시점 명단(startIds) 하나로 정한다.
+-- 종료 시점의 Players:GetPlayers()는 쓰지 않는다 (중간 입장자 제외).
+local function finishNpcMemory(result, startIds)
 	npcSaveInProgress = true
 	local ok, err = pcall(function()
-		local userIds = {}
-		for _, player in ipairs(Players:GetPlayers()) do
-			table.insert(userIds, player.UserId)
-		end
-		MemoryStore.finishAndSave(matchRecord, result, wavesCompleted, userIds, function(previous, events)
+		MemoryStore.finishAndSave(matchRecord, result, wavesCompleted, startIds, function(previous, events)
 			return NpcClient.summarize(previous, events)
 		end)
 	end)
@@ -328,8 +326,8 @@ end
 GateHighlight.stop(map)
 if lanternHealth(lantern) <= 0 then
 	print("[Director] match over result=defeat waves_completed=" .. wavesCompleted)
-	finishNpcMemory("defeat")
+	finishNpcMemory("defeat", startIds)
 else
 	print("[Director] match over result=victory waves_completed=" .. wavesCompleted)
-	finishNpcMemory("victory")
+	finishNpcMemory("victory", startIds)
 end

@@ -5,6 +5,7 @@
 -- 가짜 기록: 웨이브 3 북문 돌파, cleric 부활 2회, 패배.
 -- 실제 경기 종료와 같은 MemoryStore.finishAndSave를 쓰므로 저장·요약·로그가 같다.
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local NpcFolder = script.Parent
 local MatchRecord = require(NpcFolder:WaitForChild("MatchRecord"))
@@ -12,6 +13,16 @@ local MemoryStore = require(NpcFolder:WaitForChild("MemoryStore"))
 local NpcClient = require(NpcFolder:WaitForChild("NpcClient"))
 
 local NpcDebug = {}
+
+-- 디버그: 남은 웨이브를 건너뛰고 지금 판을 즉시 승리로 끝낸다.
+-- 결과 화면 -> 기억 저장 -> 다음 판 시작을 빠르게 확인하기 위한 것이다.
+-- 실제 경기 흐름 코드는 그대로 쓰고, "남은 웨이브 건너뛰기" 플래그만 둔다.
+-- 실행법(Studio 명령줄):
+--   require(game.ServerScriptService.Server.NpcMemory["NpcDebug"]).debugFastMatch()
+function NpcDebug.debugFastMatch()
+	ReplicatedStorage:SetAttribute("DebugFastMatch", true)
+	print("[Npc] debugFastMatch: 남은 웨이브를 건너뛰고 승리로 끝낸다")
+end
 
 function NpcDebug.debugEndMatch()
 	local userIds = {}

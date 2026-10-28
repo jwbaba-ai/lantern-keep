@@ -12,3 +12,4 @@ tools/out/
 .sl/
 .agents/
 tmp*/
+generated_images/

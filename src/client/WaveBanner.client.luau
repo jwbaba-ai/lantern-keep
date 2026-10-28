@@ -8,7 +8,6 @@ local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Config = require(Shared:WaitForChild("Config"))
 -- AssetIds가 Studio에 아직 없으면 그림 없이 글자만 보여 준다.
 local assetIdsModule = Shared:FindFirstChild("AssetIds")
 local AssetIds = assetIdsModule and require(assetIdsModule) or nil
@@ -29,8 +28,6 @@ local EVENT_ART = {
 	reinforcement_delay = "BannerReinforcement",
 	blood_moon = "BannerBloodMoon",
 }
-
-local TOTAL_WAVES = Config.TotalWaves
 
 local LANE_KO = { north = "북문", south = "남문", east = "동문", west = "서문" }
 
@@ -205,18 +202,34 @@ local function laneSummary(lanes)
 	return table.concat(parts, " · ")
 end
 
+-- 계획에서 보스(Warlord)가 나오는 성문의 한글 이름. 없으면 nil.
+local function bossLaneKo(plan)
+	if type(plan) ~= "table" or type(plan.enemies) ~= "table" then
+		return nil
+	end
+	for _, e in ipairs(plan.enemies) do
+		if e.type == "Warlord" and LANE_KO[e.lane] then
+			return LANE_KO[e.lane]
+		end
+	end
+	return nil
+end
+
 local function render()
 	local data = lastData
 	if not data then
 		return
 	end
+	local day = data.day or 1
+	local totalWaves = data.total_waves or 0
 	if data.phase == "lobby" then
-		titleLine.Text = data.display_name or ""
+		titleLine.Text = string.format("Day %d · %s", day, data.display_name or "")
 	else
 		titleLine.Text = string.format(
-			"웨이브 %d / %d · %s",
+			"Day %d · 웨이브 %d / %d · %s",
+			day,
 			data.display_wave or 0,
-			TOTAL_WAVES,
+			totalWaves,
 			data.display_name or ""
 		)
 	end
@@ -240,16 +253,26 @@ local function render()
 	end
 	noteLine.Text = note
 	-- 셋째 줄: 공격 성문 요약 + 전술 한글 이름.
+	-- 보스 웨이브면 앞에 "[보스] 그림자 군주 · 북문"을 붙인다(고정 문구).
 	local lanes = laneSummary(data.lanes or {})
 	local tacticKo = data.plan and TACTIC_KO[data.plan.tactic]
+	local bossKo = bossLaneKo(data.plan)
+	local bossPrefix = nil
+	if data.boss == true and bossKo then
+		bossPrefix = string.format("[보스] 그림자 군주 · %s", bossKo)
+	end
+	local rest = ""
 	if lanes ~= "" and tacticKo then
-		laneLine.Text = string.format("%s · %s", lanes, tacticKo)
+		rest = string.format("%s · %s", lanes, tacticKo)
 	elseif lanes ~= "" then
-		laneLine.Text = lanes
+		rest = lanes
 	elseif tacticKo then
-		laneLine.Text = tacticKo
+		rest = tacticKo
+	end
+	if bossPrefix then
+		laneLine.Text = bossPrefix .. (rest ~= "" and " · " .. rest or "")
 	else
-		laneLine.Text = ""
+		laneLine.Text = rest
 	end
 	-- 이벤트 그림: 있는 웨이브에만 배경으로 깐다. ID가 0이면 글자만 나온다.
 	local eventKey = data.plan and EVENT_ART[data.plan.event]

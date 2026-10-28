@@ -289,7 +289,7 @@ local function resetForNextMatch()
 	CombatService.endWave()
 end
 
-local function publishResult(wavesCompleted, source, result, endsAt)
+local function publishResult(day, totalWaves, wavesCompleted, source, result, endsAt)
 	DirectorState.publish(state, {
 		phase = "result",
 		displayWave = wavesCompleted,
@@ -301,6 +301,9 @@ local function publishResult(wavesCompleted, source, result, endsAt)
 		result = result,
 		wavesCompleted = wavesCompleted,
 		lanternHealthPct = lanternHealthPct(lantern),
+		day = day,
+		totalWaves = totalWaves,
+		boss = false,
 	})
 end
 
@@ -322,6 +325,10 @@ local function runMatch(matchNumber, day)
 		end
 		return true
 	end
+	-- 이번 판의 웨이브 수와 Day 체력 배율. 로비 화면에도 Day를 알린다.
+	local totalWaves = DayRules.waveCount(day)
+	local dayHealthMult = DayRules.scale(day).health
+	ReplicatedStorage:SetAttribute("Day", day)
 	local lobbyEndsAt = Workspace:GetServerTimeNow() + (Config.MatchStartWaitSeconds or 20)
 	DirectorState.publish(state, {
 		phase = "lobby",
@@ -331,6 +338,9 @@ local function runMatch(matchNumber, day)
 		waveName = "곧 시작합니다",
 		directorNote = "",
 		intermissionEndsAt = lobbyEndsAt,
+		day = day,
+		totalWaves = totalWaves,
+		boss = false,
 	})
 	while not lobbyReady() and Workspace:GetServerTimeNow() < lobbyEndsAt and not fastMatchRequested() do
 		task.wait(0.5)
@@ -348,10 +358,6 @@ local function runMatch(matchNumber, day)
 	local currentPlan = FallbackWaves[1]
 	local currentSource = "fallback"
 	local wavesCompleted = 0
-	-- 이번 판의 웨이브 수와 Day 체력 배율.
-	local totalWaves = DayRules.waveCount(day)
-	local dayHealthMult = DayRules.scale(day).health
-	ReplicatedStorage:SetAttribute("Day", day)
 
 	for wave = 1, totalWaves do
 		if fastMatchRequested() then
@@ -388,6 +394,9 @@ local function runMatch(matchNumber, day)
 			waveName = playPlan.wave_name,
 			directorNote = playPlan.director_note,
 			intermissionEndsAt = 0,
+			day = day,
+			totalWaves = totalWaves,
+			boss = bossLane ~= nil,
 		})
 
 		local tracker = playWave(map, lantern, wave, playPlan, dayHealthMult, bossLane)
@@ -431,6 +440,9 @@ local function runMatch(matchNumber, day)
 			waveName = nil,
 			directorNote = nil,
 			intermissionEndsAt = intermissionEndsAt(Config.IntermissionSeconds),
+			day = day,
+			totalWaves = totalWaves,
+			boss = DayRules.isBossWave(day, wave + 1),
 		})
 		local nextPlan = FallbackWaves[wave + 1]
 		local nextSource = "fallback"
@@ -467,6 +479,9 @@ local function runMatch(matchNumber, day)
 			waveName = nextPlan.wave_name,
 			directorNote = nextPlan.director_note,
 			intermissionEndsAt = intermissionEndsAt(rest),
+			day = day,
+			totalWaves = totalWaves,
+			boss = DayRules.isBossWave(day, wave + 1),
 		})
 		-- 다음 웨이브가 정해지면 대기 시간 동안 공격 성문을 깜빡인다.
 		GateHighlight.start(map, DirectorState.lanesOf(previewPlan))
@@ -511,12 +526,12 @@ local function runMatch(matchNumber, day)
 	))
 
 	-- 1. 결과 알림 (카운트다운 끝 시각은 저장 뒤에 확정한다).
-	publishResult(wavesCompleted, currentSource, result, 0)
+	publishResult(day, totalWaves, wavesCompleted, currentSource, result, 0)
 	-- 2. 경기 종료 처리(NPC 기억 요약·저장)를 끝까지 기다린다.
 	finishNpcMemory(result, matchRecord, wavesCompleted, startIds)
 	-- 3. 결과 화면을 MatchRestartSeconds초 보여 준다. 저장이 더 오래 걸리면 그만큼 늦게 시작한다.
 	local restartSeconds = Config.MatchRestartSeconds or 15
-	publishResult(wavesCompleted, currentSource, result, intermissionEndsAt(restartSeconds))
+	publishResult(day, totalWaves, wavesCompleted, currentSource, result, intermissionEndsAt(restartSeconds))
 	task.wait(restartSeconds)
 	-- 4. 다음 판 초기화. 직업은 유지한다.
 	resetForNextMatch()

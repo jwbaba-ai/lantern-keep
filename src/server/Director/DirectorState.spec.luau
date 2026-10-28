@@ -54,6 +54,9 @@ do
 		directorNote = musePlan.director_note,
 		intermissionEndsAt = 0,
 		filterFn = identityFilter,
+		day = 2,
+		totalWaves = 5,
+		boss = false,
 	})
 	local hasAll = data.phase ~= nil
 		and data.display_wave ~= nil
@@ -61,6 +64,9 @@ do
 		and data.display_note ~= nil
 		and data.lanes ~= nil
 		and data.intermission_ends_at ~= nil
+		and data.day == 2
+		and data.total_waves == 5
+		and data.boss == false
 	check("required_fields_present", hasAll)
 end
 
@@ -144,11 +150,11 @@ do
 	check("scaled_plan_lanes_match", sum == totalOf(scaled))
 end
 
--- 6. 결과 상태: 고정 문구 + 결과 필드.
+-- 6. 결과 상태: 고정 문구 + 결과 필드 (승리).
 do
 	local data = DirectorState.buildState({
 		phase = "result",
-		displayWave = 7,
+		displayWave = 5,
 		source = "muse",
 		plan = nil,
 		waveName = nil,
@@ -156,16 +162,21 @@ do
 		intermissionEndsAt = 789.0,
 		filterFn = failingFilter,
 		result = "victory",
-		wavesCompleted = 7,
+		wavesCompleted = 5,
 		lanternHealthPct = 62,
+		day = 2,
+		totalWaves = 5,
+		boss = false,
 	})
 	check(
 		"result_state",
-		data.display_name == "승리!"
+		data.display_name == "Day 2 승리!"
 			and data.result == "victory"
-			and data.waves_completed == 7
+			and data.waves_completed == 5
 			and data.lantern_health_pct == 62
-			and string.find(data.display_note, "7웨이브 중 7웨이브 생존") ~= nil
+			and data.day == 2
+			and data.total_waves == 5
+			and string.find(data.display_note, "5웨이브 모두 막아냄") ~= nil
 	)
 end
 
@@ -184,6 +195,33 @@ do
 	check(
 		"lobby_fixed_text_without_filter",
 		data.display_name == "곧 시작합니다"
+	)
+end
+
+-- 8. Day 1 패배 결과: "3웨이브 중" 문구.
+do
+	local data = DirectorState.buildState({
+		phase = "result",
+		displayWave = 1,
+		source = "fallback",
+		plan = nil,
+		waveName = nil,
+		directorNote = nil,
+		intermissionEndsAt = 789.0,
+		filterFn = failingFilter,
+		result = "defeat",
+		wavesCompleted = 1,
+		lanternHealthPct = 0,
+		day = 1,
+		totalWaves = 3,
+		boss = false,
+	})
+	check(
+		"day1_defeat_result",
+		data.display_name == "등불이 꺼졌다…"
+			and data.day == 1
+			and data.total_waves == 3
+			and string.find(data.display_note, "3웨이브 중 1웨이브 생존") ~= nil
 	)
 end
 

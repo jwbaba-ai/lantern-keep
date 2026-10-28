@@ -7,8 +7,11 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
+
 -- AssetIds가 Studio에 아직 없으면 초상화 없이 글자만 보여 준다.
-local assetIdsModule = ReplicatedStorage:WaitForChild("Shared"):FindFirstChild("AssetIds")
+local assetIdsModule = Shared:FindFirstChild("AssetIds")
 local AssetIds = assetIdsModule and require(assetIdsModule) or nil
 
 local function artOf(key)
@@ -29,7 +32,7 @@ gui.Parent = player:WaitForChild("PlayerGui")
 local frame = Instance.new("Frame")
 frame.AnchorPoint = Vector2.new(0.5, 0.5)
 frame.Position = UDim2.new(0.5, 0, 0.4, 0)
-frame.Size = UDim2.new(0, 480, 0, 320)
+frame.Size = UDim2.new(0, 480, 0, 352)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 frame.BackgroundTransparency = 0.15
 frame.Visible = false
@@ -65,7 +68,8 @@ end
 local titleLine = makeLabel("Title", 1, 48, Color3.new(1, 1, 1))
 local subLine = makeLabel("Sub", 2, 26, Color3.fromRGB(255, 230, 150))
 local memoryLine = makeLabel("Memory", 3, 22, Color3.fromRGB(180, 255, 180))
-local countdownLine = makeLabel("Countdown", 5, 22, Color3.fromRGB(160, 160, 160))
+local nextLine = makeLabel("Next", 4, 22, Color3.fromRGB(160, 220, 255))
+local countdownLine = makeLabel("Countdown", 6, 22, Color3.fromRGB(160, 160, 160))
 
 memoryLine.Text = "Bram과 Mira가 이번 판을 기억합니다"
 
@@ -75,7 +79,7 @@ portraitsRow.Name = "Portraits"
 portraitsRow.Size = UDim2.new(1, -24, 0, 80)
 portraitsRow.BackgroundTransparency = 1
 portraitsRow.Visible = false
-portraitsRow.LayoutOrder = 4
+portraitsRow.LayoutOrder = 5
 portraitsRow.Parent = frame
 
 local portraitsLayout = Instance.new("UIListLayout")
@@ -102,6 +106,18 @@ local miraPortrait = makePortrait("Mira", 2)
 
 local lastData = nil
 
+-- 결과 다음 안내: 승리면 다음 Day와 웨이브 수, 패배면 같은 Day 재도전.
+local function nextText(data)
+	local day = data.day or 1
+	if data.result == "victory" then
+		local nextDay = day + 1
+		local counts = Config.DayWaveCounts or { 3 }
+		local nextWaves = counts[math.clamp(nextDay, 1, #counts)]
+		return string.format("다음은 Day %d (웨이브 %d)", nextDay, nextWaves)
+	end
+	return string.format("Day %d에 다시 도전합니다", day)
+end
+
 local function render()
 	local data = lastData
 	if not data then
@@ -109,6 +125,7 @@ local function render()
 	end
 	titleLine.Text = data.display_name or ""
 	subLine.Text = data.display_note or ""
+	nextLine.Text = nextText(data)
 	local bramArt = artOf("PortraitBram")
 	local miraArt = artOf("PortraitMira")
 	bramPortrait.Image = bramArt or ""

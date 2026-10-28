@@ -61,23 +61,30 @@ end
 -- 화면용 상태 테이블을 만든다.
 -- args: phase("wave"|"intermission"|"lobby"|"result"), displayWave, source,
 --   plan(설계 중이면 nil), waveName·directorNote(설계 중이면 nil → 고정 문구),
---   intermissionEndsAt, filterFn(테스트용).
+--   intermissionEndsAt, filterFn(테스트용),
+--   day(이번 판 Day 번호), totalWaves(이번 판 웨이브 수), boss(보스 웨이브면 true).
 --   phase가 "result"면 고정 문구만 쓴다(필터 불필요):
 --   result("victory"|"defeat"), wavesCompleted, lanternHealthPct를 함께 담는다.
 function DirectorState.buildState(args)
+	local day = args.day or 1
+	local totalWaves = args.totalWaves or Config.TotalWaves
 	local displayName, displayNote
 	if args.phase == "result" then
 		if args.result == "victory" then
-			displayName = "승리!"
+			displayName = string.format("Day %d 승리!", day)
+			displayNote = string.format(
+				"%d웨이브 모두 막아냄 · 등불 체력 %d%%",
+				totalWaves,
+				args.lanternHealthPct or 0
+			)
 		else
 			displayName = "등불이 꺼졌다…"
+			displayNote = string.format(
+				"%d웨이브 중 %d웨이브 생존",
+				totalWaves,
+				args.wavesCompleted or 0
+			)
 		end
-		displayNote = string.format(
-			"%d웨이브 중 %d웨이브 생존 · 등불 체력 %d%%",
-			Config.TotalWaves,
-			args.wavesCompleted or 0,
-			args.lanternHealthPct or 0
-		)
 	elseif args.phase == "lobby" then
 		-- 로비 고정 문구는 서버 코드에 적힌 글자라 필터 없이 그대로 쓴다.
 		-- 로비 시작 시점에는 플레이어가 0명이라 필터가 항상 실패한다.
@@ -107,6 +114,9 @@ function DirectorState.buildState(args)
 		display_note = displayNote,
 		lanes = { north = 0, south = 0, east = 0, west = 0 },
 		intermission_ends_at = args.intermissionEndsAt or 0,
+		day = day,
+		total_waves = totalWaves,
+		boss = args.boss == true,
 	}
 	if args.phase == "result" then
 		state.result = args.result

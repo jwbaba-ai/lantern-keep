@@ -1,0 +1,113 @@
+-- 경기 기록 누적 (단일 기준: docs/tasks/day5.md 3단계).
+-- DirectorService가 웨이브마다 만드는 MatchStats 요약을 받아 쌓는다.
+-- 웨이브별: wave, breached_lane, lantern_health_pct, revives.
+-- 플레이어별 누적: { slot, role, damage, deaths, revives_given }.
+-- P1~P4 슬롯은 userId 오름차순으로 붙인다. 늦게 들어온 플레이어는
+-- 다음 빈 슬롯을 받는다. 이름·userId는 toEvent에서 뺀다.
+local MatchRecord = {}
+
+-- userIds 배열로 새 기록을 시작하고 슬롯을 배정한다.
+function MatchRecord.new(userIds)
+	local sorted = {}
+	for _, id in ipairs(userIds or {}) do
+		table.insert(sorted, id)
+	end
+	table.sort(sorted)
+	local record = { waves = {}, players = {}, slots = {}, result = nil, waves_completed = 0 }
+	for i, id in ipairs(sorted) do
+		local slot = "P" .. i
+		record.slots[id] = slot
+		record.players[id] = { slot = slot, role = nil, damage = 0, deaths = 0, revives_given = 0 }
+	end
+	return record
+end
+
+-- 플레이어의 슬롯을 돌려준다. 없으면 다음 빈 슬롯을 배정한다.
+function MatchRecord.ensureSlot(record, userId)
+	if record.slots[userId] == nil then
+		local n = 0
+		for _ in pairs(record.slots) do
+			n += 1
+		end
+		local slot = "P" .. (n + 1)
+		record.slots[userId] = slot
+		record.players[userId] = { slot = slot, role = nil, damage = 0, deaths = 0, revives_given = 0 }
+	end
+	return record.slots[userId]
+end
+
+-- tracker에서 웨이브별 플레이어 실적을 뽑는다.
+-- roster: { { userId, role } } — MatchStats.buildSummary에 넘긴 그 명단.
+function MatchRecord.perPlayerFromTracker(tracker, roster)
+	local out = {}
+	for _, entry in ipairs(roster or {}) do
+		local id = entry.userId
+		local revivesBy = tracker.revivesBy or {}
+		table.insert(out, {
+			userId = id,
+			role = entry.role or tracker.roles[id],
+			damage = tracker.damage[id] or 0,
+			deaths = tracker.deaths[id] or 0,
+			revives_given = revivesBy[id] or 0,
+		})
+	end
+	return out
+end
+
+-- summary: MatchStats.buildSummary 결과.
+-- perPlayer: perPlayerFromTracker 결과.
+function MatchRecord.recordWave(record, summary, perPlayer)
+	table.insert(record.waves, {
+		wave = summary.wave,
+		breached_lane = summary.breached_lane,
+		lantern_health_pct = summary.lantern_health_pct,
+		revives = summary.revives,
+	})
+	for _, entry in ipairs(perPlayer or {}) do
+		MatchRecord.ensureSlot(record, entry.userId)
+		local agg = record.players[entry.userId]
+		agg.role = entry.role or agg.role
+		agg.damage += (entry.damage or 0)
+		agg.deaths += (entry.deaths or 0)
+		agg.revives_given += (entry.revives_given or 0)
+	end
+end
+
+function MatchRecord.finish(record, result, wavesCompleted)
+	record.result = result
+	record.waves_completed = wavesCompleted
+end
+
+-- 모델·DataStore에 넣는 userId·이름 없는 사건 요약.
+function MatchRecord.toEvent(record)
+	local waves = {}
+	for _, w in ipairs(record.waves) do
+		table.insert(waves, {
+			wave = w.wave,
+			breached_lane = w.breached_lane,
+			lantern_health_pct = w.lantern_health_pct,
+			revives = w.revives,
+		})
+	end
+	local players = {}
+	for _, agg in pairs(record.players) do
+		table.insert(players, {
+			slot = agg.slot,
+			role = agg.role,
+			damage = agg.damage,
+			deaths = agg.deaths,
+			revives_given = agg.revives_given,
+		})
+	end
+	table.sort(players, function(a, b)
+		return a.slot < b.slot
+	end)
+	return {
+		result = record.result,
+		waves_completed = record.waves_completed,
+		waves = waves,
+		players = players,
+	}
+end
+
+return MatchRecord

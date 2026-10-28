@@ -15,6 +15,8 @@ local WorldFolder = script.Parent.Parent:WaitForChild("World")
 local GateHighlight = require(WorldFolder:WaitForChild("GateHighlight"))
 
 local DirectorFolder = script.Parent
+local NpcMemoryFolder = DirectorFolder.Parent:WaitForChild("NpcMemory")
+local MatchRecord = require(NpcMemoryFolder:WaitForChild("MatchRecord"))
 local EventEffects = require(DirectorFolder:WaitForChild("EventEffects"))
 local DirectorClient = require(DirectorFolder:WaitForChild("DirectorClient"))
 local WaveValidator = require(DirectorFolder:WaitForChild("WaveValidator"))
@@ -177,6 +179,13 @@ while not lobbyReady() and Workspace:GetServerTimeNow() < lobbyEndsAt do
 	task.wait(0.5)
 end
 
+-- NPC 기억용 경기 기록. P 슬롯은 로비 종료 시점 명단으로 배정한다.
+local startIds = {}
+for _, player in ipairs(Players:GetPlayers()) do
+	table.insert(startIds, player.UserId)
+end
+local matchRecord = MatchRecord.new(startIds)
+
 local currentPlan = FallbackWaves[1]
 local currentSource = "fallback"
 local wavesCompleted = 0
@@ -233,6 +242,7 @@ for wave = 1, Config.TotalWaves do
 	if okSummary then
 		print("[MatchStats] " .. summaryJson)
 	end
+	MatchRecord.recordWave(matchRecord, summary, MatchRecord.perPlayerFromTracker(tracker, roster))
 	local started = os.clock()
 	-- 대기 시작 직후 (디렉터 응답 전): 다음 웨이브는 설계 중 문구로 알린다.
 	DirectorState.publish(state, {

@@ -18,6 +18,7 @@ function MatchStats.new()
 		killed = 0,
 		breaches = {}, -- [lane] = 등불에 도달한 수
 		revives = 0,
+		revivesBy = {}, -- [userId] = 그 웨이브에 살린 횟수
 		damage = {}, -- [userId] = 그 웨이브에 준 피해 합
 		deaths = {}, -- [userId] = 그 웨이브 사망 수
 		roles = {}, -- [userId] = 기록 시점의 직업
@@ -50,8 +51,14 @@ function MatchStats.recordDeath(tracker, player)
 	tracker.roles[id] = tracker.roles[id] or player:GetAttribute("Class")
 end
 
-function MatchStats.recordRevive(tracker)
+-- cleric 부활을 기록한다. 합계(revives)는 그대로 두고,
+-- player를 넘기면 그 플레이어의 revives_given도 센다.
+function MatchStats.recordRevive(tracker, player)
 	tracker.revives += 1
+	if player ~= nil then
+		local id = player.UserId
+		tracker.revivesBy[id] = (tracker.revivesBy[id] or 0) + 1
+	end
 end
 
 -- roster: { { userId, role } } — 가만히 있던 플레이어도 요약에 넣기 위한 명단.

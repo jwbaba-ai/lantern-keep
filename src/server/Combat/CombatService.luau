@@ -150,7 +150,7 @@ local function clericAttack(player, root, _aim)
 				local beforePct = hum.Health / hum.MaxHealth
 				hum.Health = math.min(hum.MaxHealth, hum.Health + spec.Heal)
 				if ally ~= player and beforePct <= CombatService.ReviveHealthPct and currentTracker then
-					MatchStats.recordRevive(currentTracker)
+					MatchStats.recordRevive(currentTracker, player)
 				end
 				flash(root.Position, allyRoot.Position, BrickColor.new("Bright green"))
 			end

@@ -36,7 +36,7 @@ day7 devlog의 체크리스트에 사람이 남긴 메모가 있으면 먼저 �
 - `FallbackWaves.luau` 웨이브 3~7의 적 수 총합을 각각 약 15% 줄인다(올림·내림으로 맞추되 각 항목 최소 1). 성문·전술·이벤트 구성은 그대로 둔다.
 - 보스 체력은 아래 3단계대로 Brute의 **5배**로 한다.
 - 디렉터 이벤트 다양화 문장은 5단계에서 추가한다.
-- 바꾼 뒤 `python tools/balance_sim.py --matches 300 --seed 7`을 다시 돌려 표를 devlog에 붙인다. 시뮬은 협동이 없어 비관적이므로, 목표 구간 밖이어도 더 고치지 않는다.
+- 바꾼 뒤 `python tools/balance_sim.py --matches 300 --seed 7 --boss-hp-mult 5`를 다시 돌려 표를 devlog에 붙인다. 시뮬은 협동이 없어 비관적이므로, 목표 구간 밖이어도 더 고치지 않는다.
 
 ## 1단계: 설정과 규칙 모듈
 - `Config.luau` 새 키:

@@ -168,17 +168,37 @@ local ATTACKERS = {
 	cleric = clericAttack,
 }
 
--- 직업별 조준 사거리 (서버 검증용).
-local function maxRange(classKey)
-	if classKey == "ranger" then
-		return ClassCatalog.ranger.Range
-	elseif classKey == "arcanist" then
-		return ClassCatalog.arcanist.Range
-	elseif classKey == "cleric" then
-		return ClassCatalog.cleric.Radius
-	else
-		return ClassCatalog.guardian.Radius
+-- 조준 위치 판정 (단일 기준: docs/tasks/day4.md 0-1.1).
+-- guardian·cleric은 조준을 쓰지 않으므로 그대로 허용한다.
+-- ranger는 조준 방향만 쓴다(레이 길이는 Range 고정). 그대로 허용한다.
+-- arcanist는 조준 위치를 캐릭터 기준 Range 안으로 잘라서(clamp) 쓴다.
+-- 이 함수는 공격을 거부하지 않는다. 쿨다운은 checkCooldown이 맡는다.
+function CombatService.resolveAim(classKey, rootPosition, aim)
+	if classKey == "arcanist" then
+		local range = ClassCatalog.arcanist.Range
+		local offset = aim - rootPosition
+		if offset.Magnitude > range then
+			return rootPosition + offset.Unit * range
+		end
 	end
+	return aim
+end
+
+-- 쿨다운이 지났으면 true. 직업·쿨다운 검증용.
+function CombatService.checkCooldown(classKey, userId, now)
+	local spec = ClassCatalog[classKey]
+	if not spec then
+		return false
+	end
+	local last = lastAttackAt[userId]
+	if last and now - last < spec.Cooldown then
+		return false
+	end
+	return true
+end
+
+function CombatService.markAttacked(userId, now)
+	lastAttackAt[userId] = now
 end
 
 attackEvent.OnServerEvent:Connect(function(player, aim)
@@ -198,15 +218,11 @@ attackEvent.OnServerEvent:Connect(function(player, aim)
 	end
 	-- 쿨다운 검증.
 	local now = os.clock()
-	if lastAttackAt[player.UserId] and now - lastAttackAt[player.UserId] < spec.Cooldown then
+	if not CombatService.checkCooldown(classKey, player.UserId, now) then
 		return
 	end
-	-- 사거리 검증.
-	if (aim - root.Position).Magnitude > maxRange(classKey) then
-		return
-	end
-	lastAttackAt[player.UserId] = now
-	ATTACKERS[classKey](player, root, aim)
+	CombatService.markAttacked(player.UserId, now)
+	ATTACKERS[classKey](player, root, CombatService.resolveAim(classKey, root.Position, aim))
 end)
 
 -- 사망 기록 (리스폰은 기본 리스폰을 그대로 쓴다).

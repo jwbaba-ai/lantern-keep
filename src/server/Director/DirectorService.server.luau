@@ -1,8 +1,9 @@
 -- 경기 흐름 (단일 기준: docs/GAME_DESIGN.md 한 판의 흐름).
 -- 서버가 살아 있는 동안 runMatch()를 반복한다:
--- 로비 -> 웨이브 1~TotalWaves -> 결과(phase="result") -> NPC 기억 저장 ->
+-- 로비 -> 웨이브 1~이번 Day 웨이브 수 -> 결과(phase="result") -> NPC 기억 저장 ->
 -- MatchRestartSeconds 결과 화면 -> 초기화 -> 로비부터 다시.
--- 웨이브 1~TotalWaves 반복: 진행 -> 종료 -> 요약 -> 대기 시작과 동시에 다음 웨이브 요청.
+-- 승리하면 다음 Day로 가고, 패배하면 같은 Day에 다시 도전한다.
+-- 웨이브 반복: 진행 -> 종료 -> 요약 -> 대기 시작과 동시에 다음 웨이브 요청.
 -- 통과한 계획은 적용하고, 실패(nil·검증 실패)하면 FallbackWaves를 쓴다. 경기는 절대 멈추지 않는다.
 -- 웨이브 시작·대기·결과 상태를 DirectorState(JSON)로 알리고,
 -- 이벤트 효과는 EventEffects가 적용·복원한다.
@@ -28,6 +29,7 @@ local EventEffects = require(DirectorFolder:WaitForChild("EventEffects"))
 local DirectorClient = require(DirectorFolder:WaitForChild("DirectorClient"))
 local WaveValidator = require(DirectorFolder:WaitForChild("WaveValidator"))
 local DirectorState = require(DirectorFolder:WaitForChild("DirectorState"))
+local DayRules = require(DirectorFolder:WaitForChild("DayRules"))
 local PartyScale = require(DirectorFolder:WaitForChild("PartyScale"))
 local MatchStats = require(DirectorFolder:WaitForChild("MatchStats"))
 local EnemyFactory = require(DirectorFolder.Parent:WaitForChild("Enemies"):WaitForChild("EnemyFactory"))
@@ -100,7 +102,8 @@ local function getWaypoints(map, lane)
 end
 
 -- 웨이브 하나를 끝까지 진행하고 통계를 돌려준다.
-local function playWave(map, lantern, wave, plan)
+-- dayHealthMult: Day 체력 배율 (EnemyFactory.spawn에 인자로 넘긴다).
+local function playWave(map, lantern, wave, plan, dayHealthMult)
 	local tracker = MatchStats.new()
 	CombatService.beginWave(tracker)
 	-- 이벤트 효과 적용 (웨이브가 끝나면 원래 값으로 되돌린다).
@@ -127,7 +130,8 @@ local function playWave(map, lantern, wave, plan)
 				waypointsByLane[entry.lane],
 				lantern,
 				onResolved,
-				EventEffects.nextSpawnMods(waveMods)
+				EventEffects.nextSpawnMods(waveMods),
+				dayHealthMult
 			)
 			if body then
 				MatchStats.recordSpawn(tracker, entry.lane)
@@ -222,7 +226,8 @@ end
 
 -- 경기 한 판: 로비 -> 웨이브 -> 결과 -> 기억 저장 -> 결과 화면 -> 초기화.
 -- 플레이어의 직업은 판이 바뀌어도 유지하고, 다시 고르지 않는다.
-local function runMatch(matchNumber)
+-- day: 이번 판의 Day 번호. 웨이브 수는 DayRules.waveCount(day)로 정한다.
+local function runMatch(matchNumber, day)
 	-- 로비: 1명 이상 들어오고 모두 직업을 고를 때까지 기다린다.
 	-- 최대 MatchStartWaitSeconds까지만 기다리고, 그래도 0명이면 자동 테스트로 진행한다.
 	local function lobbyReady()
@@ -263,8 +268,12 @@ local function runMatch(matchNumber)
 	local currentPlan = FallbackWaves[1]
 	local currentSource = "fallback"
 	local wavesCompleted = 0
+	-- 이번 판의 웨이브 수와 Day 체력 배율.
+	local totalWaves = DayRules.waveCount(day)
+	local dayHealthMult = DayRules.scale(day).health
+	ReplicatedStorage:SetAttribute("Day", day)
 
-	for wave = 1, Config.TotalWaves do
+	for wave = 1, totalWaves do
 		if fastMatchRequested() then
 			clearFastMatch()
 			break
@@ -272,11 +281,18 @@ local function runMatch(matchNumber)
 		if lanternHealth(lantern) <= 0 then
 			break
 		end
-		-- 파티 인원 보정: 검증 통과 뒤 적용 직전에 적 수를 줄인다 (요약은 그대로).
+		-- 적용 순서: 검증 통과 뒤 PartyScale 보정 → DayRules 수 보정 → (보스 웨이브면) 보스 추가.
+		-- 파티·Day 보정은 웨이브 시작 시점 복사본에만 건다 (요약·previous_wave는 그대로).
 		local partySize = #Players:GetPlayers()
-		local playPlan, scaledTotal = PartyScale.scalePlan(currentPlan, partySize)
+		local partyPlan = PartyScale.scalePlan(currentPlan, partySize)
+		local playPlan = DayRules.scalePlan(partyPlan, day)
+		local scaledTotal = 0
+		for _, e in ipairs(playPlan.enemies) do
+			scaledTotal += e.count
+		end
 		print(string.format(
-			"[Director] wave=%d party=%d scaled_enemies=%d",
+			"[Director] day=%d wave=%d party=%d scaled_enemies=%d",
+			day,
 			wave,
 			partySize,
 			scaledTotal
@@ -294,7 +310,7 @@ local function runMatch(matchNumber)
 			intermissionEndsAt = 0,
 		})
 
-		local tracker = playWave(map, lantern, wave, playPlan)
+		local tracker = playWave(map, lantern, wave, playPlan, dayHealthMult)
 		wavesCompleted = wave
 
 		if lanternHealth(lantern) <= 0 then
@@ -304,7 +320,7 @@ local function runMatch(matchNumber)
 			clearFastMatch()
 			break
 		end
-		if wave == Config.TotalWaves then
+		if wave == totalWaves then
 			break
 		end
 
@@ -356,9 +372,9 @@ local function runMatch(matchNumber)
 
 		local rest = Config.IntermissionSeconds - (os.clock() - started)
 		-- 디렉터 응답 또는 대체 웨이브 확정: 다음 웨이브 정보로 갱신한다.
-		-- 대기 중 미리보기에도 웨이브 시작 때와 같은 PartyScale 보정을 쓴다
-		-- (시작 시점에 인원이 바뀌면 그때 다시 보정한다).
-		local previewPlan = PartyScale.scalePlan(nextPlan, #Players:GetPlayers())
+		-- 대기 중 미리보기에도 웨이브 시작 때와 같은 순서로 보정을 쓴다
+		-- (PartyScale → DayRules, 시작 시점에 인원이 바뀌면 그때 다시 보정한다).
+		local previewPlan = DayRules.scalePlan(PartyScale.scalePlan(nextPlan, #Players:GetPlayers()), day)
 		DirectorState.publish(state, {
 			phase = "intermission",
 			displayWave = wave + 1,
@@ -403,7 +419,12 @@ local function runMatch(matchNumber)
 	if lanternHealth(lantern) <= 0 then
 		result = "defeat"
 	end
-	print("[Director] match over result=" .. result .. " waves_completed=" .. wavesCompleted)
+	print(string.format(
+		"[Director] day=%d waves=%d result=%s",
+		day,
+		totalWaves,
+		result
+	))
 
 	-- 1. 결과 알림 (카운트다운 끝 시각은 저장 뒤에 확정한다).
 	publishResult(wavesCompleted, currentSource, result, 0)
@@ -415,14 +436,22 @@ local function runMatch(matchNumber)
 	task.wait(restartSeconds)
 	-- 4. 다음 판 초기화. 직업은 유지한다.
 	resetForNextMatch()
+	return result
 end
 
 ReplicatedStorage:SetAttribute("MatchNumber", 0)
+ReplicatedStorage:SetAttribute("Day", 1)
 local matchNumber = 0
+-- Day는 서버 안에서만 이어진다. 새 서버는 Day 1부터 시작한다.
+-- 승리하면 다음 Day로 가고, 패배하면 같은 Day에 다시 도전한다.
+local currentDay = 1
 while true do
 	matchNumber += 1
-	print(string.format("[Director] match=%d start", matchNumber))
-	runMatch(matchNumber)
+	print(string.format("[Director] match=%d day=%d start", matchNumber, currentDay))
+	local result = runMatch(matchNumber, currentDay)
+	if result == "victory" then
+		currentDay += 1
+	end
 	-- 플레이어가 0명이면(자동 테스트) 한 판만 돌고 멈춘다. 지금과 같은 동작이다.
 	if #Players:GetPlayers() == 0 then
 		print("[Director] no players after match: 한 판만 돌고 멈춘다")

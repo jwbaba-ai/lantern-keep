@@ -1,7 +1,6 @@
--- 고정 대체 웨이브 1~7 (웨이브 스키마와 같은 형태).
+-- 고정 대체 웨이브 1~10 (웨이브 스키마와 같은 형태).
 -- 웨이브 1은 항상 이것을 쓰며, 디렉터 호출 실패 시 해당 웨이브 번호 것을 쓴다.
 -- 설계 메모: 테스트 처치(EnemyFactory, 체력 비례) 때문에 Brute만 등불까지 닿는다.
--- Brute 6마리 x 15 = 90 피해이므로 대체 웨이브만으로 돌면 등불이 10으로 7웨이브를 마친다.
 -- blood_moon은 대체 웨이브에 넣지 않는다 (안전망은 쉬워야 하고, 연출은 디렉터 몫).
 return {
 	{
@@ -94,5 +93,52 @@ return {
 		tactic = "siege",
 		event = "elite_spawn",
 		director_note = "Everything the dark has left marches on the lantern.",
+	},
+	{
+		wave_name = "The Long Dark",
+		enemies = {
+			{ type = "Grunt", count = 6, lane = "north" },
+			{ type = "Brute", count = 2, lane = "north" },
+			{ type = "Runner", count = 6, lane = "south" },
+			{ type = "Grunt", count = 2, lane = "south" },
+			{ type = "Archer", count = 4, lane = "east" },
+			{ type = "Grunt", count = 3, lane = "west" },
+			{ type = "Shaman", count = 1, lane = "west" },
+		},
+		tactic = "flank",
+		event = "fog",
+		director_note = "Darkness thickens as two brutes lead the northern push.",
+	},
+	{
+		wave_name = "Embers Against the Wind",
+		enemies = {
+			{ type = "Grunt", count = 7, lane = "north" },
+			{ type = "Brute", count = 2, lane = "north" },
+			{ type = "Runner", count = 7, lane = "south" },
+			{ type = "Grunt", count = 2, lane = "south" },
+			{ type = "Archer", count = 4, lane = "east" },
+			{ type = "Shaman", count = 1, lane = "east" },
+			{ type = "Grunt", count = 2, lane = "west" },
+			{ type = "Archer", count = 1, lane = "west" },
+		},
+		tactic = "siege",
+		event = "elite_spawn",
+		director_note = "A slow elite-led siege grinds toward the lantern.",
+	},
+	{
+		wave_name = "The Shadow Lord",
+		enemies = {
+			{ type = "Grunt", count = 7, lane = "north" },
+			{ type = "Brute", count = 2, lane = "north" },
+			{ type = "Runner", count = 7, lane = "south" },
+			{ type = "Grunt", count = 3, lane = "south" },
+			{ type = "Archer", count = 4, lane = "east" },
+			{ type = "Shaman", count = 1, lane = "east" },
+			{ type = "Grunt", count = 3, lane = "west" },
+			{ type = "Brute", count = 1, lane = "west" },
+		},
+		tactic = "siege",
+		event = "reinforcement_delay",
+		director_note = "Wave after wave breaks on the walls, and something huge walks behind them.",
 	},
 }

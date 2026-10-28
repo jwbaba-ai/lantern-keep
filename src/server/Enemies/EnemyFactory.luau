@@ -58,7 +58,8 @@ function EnemyFactory.damage(body, amount)
 end
 
 -- mods(선택): { healthMult, sizeMult, namePrefix } — 이벤트 효과용.
-function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved, mods)
+-- dayHealthMult(선택): Day 체력 배율. DirectorService가 DayRules.scale(day).health를 인자로 넘긴다.
+function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved, mods, dayHealthMult)
 	local spec = EnemyCatalog[enemyType]
 	if not spec or #waypoints == 0 then
 		return nil
@@ -67,7 +68,8 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved, mod
 	-- 파티 인원 보정: 적 체력 배율 (Config.PartyHealthScale, 스폰 시점 인원 기준).
 	local partySize = math.clamp(#Players:GetPlayers(), 1, 4)
 	local eventMult = (mods and mods.healthMult) or 1
-	local maxHp = math.max(1, math.floor(spec.Health * Config.PartyHealthScale[partySize] * eventMult + 0.5))
+	local dayMult = dayHealthMult or 1
+	local maxHp = math.max(1, math.floor(spec.Health * Config.PartyHealthScale[partySize] * eventMult * dayMult + 0.5))
 
 	local body = Instance.new("Part")
 	body.Name = enemyType

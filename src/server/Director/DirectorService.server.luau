@@ -3,6 +3,7 @@
 -- 통과한 계획은 적용하고, 실패(nil·검증 실패)하면 FallbackWaves를 쓴다. 경기는 절대 멈추지 않는다.
 -- 이벤트는 2일차에 Output 로그만 남긴다 (효과는 4일차).
 local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -14,6 +15,7 @@ local DirectorClient = require(DirectorFolder:WaitForChild("DirectorClient"))
 local WaveValidator = require(DirectorFolder:WaitForChild("WaveValidator"))
 local MatchStats = require(DirectorFolder:WaitForChild("MatchStats"))
 local EnemyFactory = require(DirectorFolder.Parent:WaitForChild("Enemies"):WaitForChild("EnemyFactory"))
+local CombatService = require(DirectorFolder.Parent:WaitForChild("Combat"):WaitForChild("CombatService"))
 
 local SPAWN_INTERVAL = 1.0 -- 적 한 마리씩 꺼내는 간격(초)
 local WAVE_TIMEOUT = 180 -- 웨이브 강제 종료까지 최대 대기(초)
@@ -69,6 +71,7 @@ end
 -- 웨이브 하나를 끝까지 진행하고 통계를 돌려준다.
 local function playWave(map, lantern, wave, plan)
 	local tracker = MatchStats.new()
+	CombatService.beginWave(tracker)
 	local waypointsByLane = {}
 	for _, lane in ipairs(Config.Lanes) do
 		waypointsByLane[lane] = getWaypoints(map, lane)
@@ -118,6 +121,7 @@ local function playWave(map, lantern, wave, plan)
 			end
 		end
 	end
+	CombatService.endWave()
 	return tracker
 end
 
@@ -157,10 +161,21 @@ for wave = 1, Config.TotalWaves do
 	end
 
 	-- 대기 시작과 동시에 다음 웨이브 요청 (전투 중 호출 금지: 웨이브 사이만).
+	local roster = {}
+	for _, player in ipairs(Players:GetPlayers()) do
+		table.insert(roster, {
+			userId = player.UserId,
+			role = player:GetAttribute("Class") or "guardian",
+		})
+	end
 	local summary = MatchStats.buildSummary(tracker, wave, lanternHealthPct(lantern), {
 		tactic = currentPlan.tactic,
 		event = currentPlan.event,
-	})
+	}, roster)
+	local okSummary, summaryJson = pcall(HttpService.JSONEncode, HttpService, summary)
+	if okSummary then
+		print("[MatchStats] " .. summaryJson)
+	end
 	local started = os.clock()
 	local nextPlan = FallbackWaves[wave + 1]
 	local nextSource = "fallback"

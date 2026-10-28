@@ -215,7 +215,14 @@ local function hookDeaths(player)
 	if not character then
 		return
 	end
-	local humanoid = character:WaitForChild("Humanoid")
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		character:WaitForChild("Humanoid", 5)
+		humanoid = character:FindFirstChildOfClass("Humanoid")
+	end
+	if not humanoid then
+		return
+	end
 	humanoid.Died:Connect(function()
 		if currentTracker then
 			MatchStats.recordDeath(currentTracker, player)

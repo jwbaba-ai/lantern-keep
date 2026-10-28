@@ -165,7 +165,7 @@ local function refreshCountdown()
 end
 
 local state = ReplicatedStorage:WaitForChild("DirectorState")
-state.Changed:Connect(function()
+local function onChanged()
 	local ok, data = pcall(HttpService.JSONDecode, HttpService, state.Value)
 	if not ok or type(data) ~= "table" then
 		return
@@ -179,7 +179,13 @@ state.Changed:Connect(function()
 	lastData = data
 	render()
 	refreshCountdown()
-end)
+end
+state.Changed:Connect(onChanged)
+-- 웨이브 1 상태는 클라이언트 접속 전에 이미 설정되어 있을 수 있다.
+-- Value가 비어 있지 않으면 시작 시 한 번 그린다.
+if state.Value ~= "" then
+	onChanged()
+end
 
 -- 카운트다운 갱신.
 task.spawn(function()

@@ -1,0 +1,22 @@
+{
+  "previous": {
+    "bram_memory": "P1, P2 and P3 held all seven waves without losing a gate.",
+    "mira_memory": "P3 the ranger never fell and hit the hardest."
+  },
+  "events": [
+    {
+      "result": "victory",
+      "waves_completed": 7,
+      "waves": [
+        { "wave": 2, "breached_lane": null, "lantern_health_pct": 88, "revives": 2 },
+        { "wave": 5, "breached_lane": "east", "lantern_health_pct": 66, "revives": 4 },
+        { "wave": 7, "breached_lane": null, "lantern_health_pct": 61, "revives": 3 }
+      ],
+      "players": [
+        { "slot": "P1", "role": "guardian", "damage": 4800, "deaths": 2, "revives_given": 0 },
+        { "slot": "P2", "role": "cleric", "damage": 1100, "deaths": 1, "revives_given": 9 },
+        { "slot": "P3", "role": "ranger", "damage": 6700, "deaths": 0, "revives_given": 0 }
+      ]
+    }
+  ]
+}

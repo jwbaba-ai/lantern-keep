@@ -1,0 +1,34 @@
+{
+  "previous": {
+    "bram_memory": "P1 and P2 fell at wave 3 when the north gate broke.",
+    "mira_memory": "P2 the cleric revived twice before the lantern fell."
+  },
+  "events": [
+    {
+      "result": "defeat",
+      "waves_completed": 3,
+      "waves": [
+        { "wave": 1, "breached_lane": null, "lantern_health_pct": 82, "revives": 0 },
+        { "wave": 2, "breached_lane": null, "lantern_health_pct": 61, "revives": 1 },
+        { "wave": 3, "breached_lane": "north", "lantern_health_pct": 0, "revives": 2 }
+      ],
+      "players": [
+        { "slot": "P1", "role": "guardian", "damage": 1500, "deaths": 1, "revives_given": 0 },
+        { "slot": "P2", "role": "cleric", "damage": 400, "deaths": 0, "revives_given": 2 }
+      ]
+    },
+    {
+      "result": "victory",
+      "waves_completed": 7,
+      "waves": [
+        { "wave": 1, "breached_lane": null, "lantern_health_pct": 100, "revives": 0 },
+        { "wave": 4, "breached_lane": "south", "lantern_health_pct": 74, "revives": 1 },
+        { "wave": 7, "breached_lane": null, "lantern_health_pct": 58, "revives": 0 }
+      ],
+      "players": [
+        { "slot": "P1", "role": "guardian", "damage": 5200, "deaths": 0, "revives_given": 0 },
+        { "slot": "P2", "role": "cleric", "damage": 900, "deaths": 1, "revives_given": 3 }
+      ]
+    }
+  ]
+}

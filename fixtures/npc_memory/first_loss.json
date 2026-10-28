@@ -1,0 +1,18 @@
+{
+  "previous": null,
+  "events": [
+    {
+      "result": "defeat",
+      "waves_completed": 3,
+      "waves": [
+        { "wave": 1, "breached_lane": null, "lantern_health_pct": 82, "revives": 0 },
+        { "wave": 2, "breached_lane": null, "lantern_health_pct": 61, "revives": 1 },
+        { "wave": 3, "breached_lane": "north", "lantern_health_pct": 0, "revives": 2 }
+      ],
+      "players": [
+        { "slot": "P1", "role": "guardian", "damage": 1500, "deaths": 1, "revives_given": 0 },
+        { "slot": "P2", "role": "cleric", "damage": 400, "deaths": 0, "revives_given": 2 }
+      ]
+    }
+  ]
+}

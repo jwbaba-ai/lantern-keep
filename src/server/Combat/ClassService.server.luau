@@ -86,7 +86,7 @@ chooseEvent.OnServerEvent:Connect(function(player, classKey)
 	assignClass(player, classKey)
 end)
 
-Players.PlayerAdded:Connect(function(player)
+local function hookPlayer(player)
 	player.CharacterAdded:Connect(function()
 		local classKey = player:GetAttribute("Class")
 		if classKey and ClassCatalog[classKey] then
@@ -103,4 +103,10 @@ Players.PlayerAdded:Connect(function(player)
 			assignClass(player, "guardian")
 		end
 	end)
-end)
+end
+
+-- 스크립트 시작 전에 들어온 플레이어도 놓치지 않는다.
+for _, player in ipairs(Players:GetPlayers()) do
+	hookPlayer(player)
+end
+Players.PlayerAdded:Connect(hookPlayer)

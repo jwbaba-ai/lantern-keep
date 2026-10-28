@@ -16,6 +16,8 @@
 ## 0단계: day4 확인 결과 반영
 - day4 devlog의 체크리스트에 사람이 남긴 메모가 있으면 먼저 그 문제부터 고치고 커밋한다.
 - **day4 리뷰 수정 (Claude Code)**: 대기 중에 보내는 다음 웨이브 정보(`DirectorState`의 `lanes`, `GateHighlight.start`)가 **파티 인원 보정 전** 계획을 쓴다. 그래서 배너에는 "북문 12"가 나왔다가, 실제 웨이브에는 6마리가 나온다. 대기 중 미리보기에도 웨이브 시작 때와 같은 `PartyScale.scalePlan` 결과를 쓴다(웨이브 시작 시점에 인원이 바뀌면 그때 다시 보정). `DirectorState.spec`에 "보정한 plan을 넘기면 lanes 합계 = 보정 합계" 1건을 추가한다.
+- **[높음] 웨이브 1 배너가 비어 있음** (day4 Studio 테스트): `src/client/WaveBanner.client.luau`가 `DirectorState.Changed` 때만 그린다. 웨이브 1 상태는 클라이언트가 접속하기 전에 이미 설정되어 있어서, 첫 웨이브 동안 글자가 비어 있다. 스크립트 시작 시 `Value`가 비어 있지 않으면 한 번 그린다. `LanternBar`도 같은 방식인지 확인하고, 같으면 똑같이 고친다.
+- **[중간] 플레이어가 들어오기 전에 경기가 시작됨** (Output `wave=1 party=0`): `DirectorService`가 웨이브 1을 시작하기 전에 플레이어가 1명 이상 들어오고 모두 직업을 고를 때까지 기다린다. 최대 `MatchStartWaitSeconds`(Config 새 키, 시작값 20)까지만 기다리고, 그래도 0명이면 지금처럼 자동 테스트로 진행한다. 기다리는 동안 배너에 "곧 시작합니다 · N초"를 표시한다(`phase="lobby"`).
 
 ## 1단계: 응답 스키마 (사람(Babazz) 승인됨 2026-10-28 — 아래 그대로 만든다)
 `schemas/npc_memory.schema.json` (strict 규칙: 모든 객체 `additionalProperties: false`, 모든 속성 `required`, 재귀 없음)

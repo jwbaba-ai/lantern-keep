@@ -24,6 +24,7 @@
   - `src/shared/FallbackWaves.luau`: 웨이브 8~10 추가
   - `src/shared/EnemyCatalog.luau`: 보스 1종 추가
   - `src/server/Director/prompt.txt`, `src/server/NpcMemory/prompt.txt`: 아래 적은 문장만 수정
+  - `src/shared/AssetIds.luau`: 키 2개(`PortraitWarlord`, `BannerBoss`)를 값 `0`으로 추가한다. 기존 ID 값은 건드리지 않는다.
   - `schemas/npc_memory.schema.json`: `bram_lines`·`mira_lines`의 `description`만 수정한다. 그다음 `python tools/gen_schema_luau.py`로 다시 생성하고, `git diff --exit-code src/shared/WaveSchema.luau`로 WaveSchema가 그대로인지 확인한다.
 - `schemas/wave_plan.schema.json`과 `src/shared/WaveSchema.luau`는 **고치지 않는다.** 보스는 디렉터가 고르지 않고, 서버가 검증 뒤에 붙인다.
 - 환경 설정·패키지 설치 명령은 금지한다. 30초 넘게 멈추는 명령은 중단하고 보고한다.
@@ -31,6 +32,7 @@
 
 ## 0단계: day7 확인 결과 반영
 day7 devlog의 체크리스트에 사람이 남긴 메모가 있으면 먼저 고치고 커밋한다.
+`docs/reports/balance_sim.md`(day7b)에서 사람이 고른 조정 제안이 devlog에 있으면, 1단계 Config 값을 정할 때 그 값을 쓴다. 고른 것이 없으면 이 문서의 기본값을 쓴다.
 
 ## 1단계: 설정과 규칙 모듈
 - `Config.luau` 새 키:
@@ -90,6 +92,23 @@ day7 devlog의 체크리스트에 사람이 남긴 메모가 있으면 먼저 �
 ## 6단계: 테스트 수단
 - `NpcDebug.debugSetDay(n)`: 명령줄에서 호출하면 **다음 판**의 Day를 n으로 정한다. `debugFastMatch()`와 함께 쓰면 Day 5 보스를 빨리 볼 수 있다.
 
+## 6-1단계: Muse Image 추가 이미지 (`assets/images/`)
+day6 3단계와 같은 규칙을 쓴다.
+- 같은 화풍(따뜻한 등불 빛, 어두운 판타지 성채, 그림책 같은 페인팅, 글자 없음)
+- `PROMPTS.md`에 프롬프트 전문과 날짜 기록, `docs/ORIGINS.md`에 "신규" 기록
+- 다시 만들기는 4가지 기준에 해당할 때만, 이미지당 최대 3번
+
+| 파일 | 내용 | 크기 |
+|---|---|---|
+| `portrait_warlord.png` | 보스 "그림자 군주": 검은 갑옷과 뿔 달린 투구, 붉게 빛나는 눈, 상반신. 실제 인물·기존 게임 캐릭터를 닮지 않게 | 512×512 |
+| `banner_boss.png` | 성문 앞에 선 거대한 그림자 군주와 그 뒤의 군세 | 가로로 긴 배너(기존 배너와 같은 비율) |
+| `icon.png` | 체험 아이콘: 가운데의 빛나는 등불과 성채 실루엣. 작게 줄여도 알아보기 쉬운 단순한 구도 | 512×512 |
+
+- `AssetIds.luau`에 `PortraitWarlord`, `BannerBoss`를 `0`으로 추가한다. 0이면 그림 없이 글자만 보여 준다.
+- 보스 웨이브 배너에는 `BannerBoss`를 배경으로 깔고(이벤트 그림보다 우선), 배너 셋째 줄의 `[보스]` 앞에 `PortraitWarlord`를 작게 붙인다. 레이어와 휴대폰 배율은 day7 규칙을 따른다.
+- `icon.png`는 게임 코드에서 쓰지 않는다. 사람이 체험 아이콘으로 등록한다.
+- `AssetIds.spec`에 새 키 2개 검사를 추가한다.
+
 ## 7단계: 마무리
 - `docs/GAME_DESIGN.md`의 "7웨이브" 설명을 Day 표로 바꾼다. AGENTS.md 게임 정보의 "7웨이브 동안 지킨다"는 사람 승인 대상이므로 고치지 않고, 바꿀 문장만 devlog에 제안한다.
 - devlog에 한 일, 추가·변경한 Config 키, 사람이 확인할 체크리스트를 기록한 뒤 커밋한다.
@@ -103,3 +122,5 @@ day7 devlog의 체크리스트에 사람이 남긴 메모가 있으면 먼저 �
 - [ ] Day 6에서 적 체력·수가 Day 5보다 많음(Output `scaled_enemies`로 확인)
 - [ ] Day 1에서 Bram·Mira 셋째 대사가 웨이브 2 뒤에 나옴
 - [ ] 실제 서버에서 Day 1 → Day 2 두 판을 연속으로 해 보고, NPC가 지난 판(Day 1)을 언급함
+- [ ] 새 그림 3장 확인(다시 만들 그림은 devlog에 적기) → 2장은 크리에이터 허브에 업로드하고 ID를 `AssetIds`에 넣음, `icon.png`는 체험 아이콘으로 등록
+- [ ] `docs/reports/balance_sim.md`에서 고른 조정 제안이 있으면 이 작업의 Config 값에 반영됨

@@ -8,6 +8,7 @@
 - `src/shared/Config.luau`는 **이번 작업에 필요한 새 키 추가만** 허용한다(기존 값 변경 금지). 추가한 키는 devlog에 적는다.
 - 환경 설정·패키지 설치 명령 금지. 30초 넘게 멈추는 명령은 중단하고 보고한다.
 - 모든 클라이언트→서버 요청은 서버에서 검증한다(쿨다운, 사거리, 직업 일치). 데미지 계산은 서버에서만.
+- 클라이언트 코드는 `src/client/`에 둔다. `default.project.json`에 `StarterPlayer > StarterPlayerScripts > Client` → `src/client` 매핑을 추가한다(이 파일은 이 매핑 추가만 허용). 클라이언트 실행 스크립트 이름은 `*.client.luau`.
 
 ## 0단계: 어제 Studio 확인 결과 반영
 `docs/devlog/2026-10-28.md`의 체크리스트에 사람이 남긴 메모가 있으면 먼저 그 문제부터 고치고 커밋한다. 메모가 없으면 넘어간다.

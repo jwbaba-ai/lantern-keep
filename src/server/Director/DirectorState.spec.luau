@@ -7,6 +7,7 @@ local FallbackWaves = require(Shared:WaitForChild("FallbackWaves"))
 
 local DirectorFolder = script.Parent
 local DirectorState = require(DirectorFolder:WaitForChild("DirectorState"))
+local PartyScale = require(DirectorFolder:WaitForChild("PartyScale"))
 
 local results = {}
 
@@ -121,6 +122,26 @@ do
 		"designing_state",
 		data.display_name == DirectorState.DESIGNING_TEXT and lanesEmpty
 	)
+end
+
+-- 5. 보정한 plan을 넘기면 lanes 합계 = 보정 합계.
+do
+	local scaled = PartyScale.scalePlan(musePlan, 1)
+	local data = DirectorState.buildState({
+		phase = "intermission",
+		displayWave = 3,
+		source = "muse",
+		plan = scaled,
+		waveName = musePlan.wave_name,
+		directorNote = musePlan.director_note,
+		intermissionEndsAt = 0,
+		filterFn = identityFilter,
+	})
+	local sum = (data.lanes.north or 0)
+		+ (data.lanes.south or 0)
+		+ (data.lanes.east or 0)
+		+ (data.lanes.west or 0)
+	check("scaled_plan_lanes_match", sum == totalOf(scaled))
 end
 
 return results

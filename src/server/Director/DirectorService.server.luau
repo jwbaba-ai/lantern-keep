@@ -236,17 +236,20 @@ for wave = 1, Config.TotalWaves do
 
 	local rest = Config.IntermissionSeconds - (os.clock() - started)
 	-- 디렉터 응답 또는 대체 웨이브 확정: 다음 웨이브 정보로 갱신한다.
+	-- 대기 중 미리보기에도 웨이브 시작 때와 같은 PartyScale 보정을 쓴다
+	-- (시작 시점에 인원이 바뀌면 그때 다시 보정한다).
+	local previewPlan = PartyScale.scalePlan(nextPlan, #Players:GetPlayers())
 	DirectorState.publish(state, {
 		phase = "intermission",
 		displayWave = wave + 1,
 		source = nextSource,
-		plan = nextPlan,
+		plan = previewPlan,
 		waveName = nextPlan.wave_name,
 		directorNote = nextPlan.director_note,
 		intermissionEndsAt = intermissionEndsAt(rest),
 	})
 	-- 다음 웨이브가 정해지면 대기 시간 동안 공격 성문을 깜빡인다.
-	GateHighlight.start(map, DirectorState.lanesOf(nextPlan))
+	GateHighlight.start(map, DirectorState.lanesOf(previewPlan))
 	if rest > 0 then
 		task.wait(rest)
 	end

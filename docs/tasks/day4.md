@@ -15,6 +15,16 @@
 ## 0단계: 어제 Studio 확인 결과 반영
 day3 devlog의 체크리스트에 사람이 남긴 메모가 있으면 먼저 그 문제부터 고치고 커밋한다. 메모가 없으면 넘어간다.
 
+### 0-1. day3 코드 리뷰 수정 (Claude Code 리뷰, 2026-10-28) — 위에서부터 순서대로, 항목마다 커밋
+1. **[높음] 공격 사거리 검증이 정상 공격을 막음** — `src/server/Combat/CombatService.luau`의 `attackEvent.OnServerEvent`
+   - 증상: 조준 위치(`mouse.Hit`)가 사거리 밖이면 공격 전체를 버린다. guardian(8)·cleric(15)은 조준을 쓰지도 않는데 조금만 멀리 클릭해도 공격이 무시되고, ranger·arcanist는 하늘이나 사거리 밖을 클릭하면 무시된다.
+   - 고칠 것: guardian·cleric은 조준 위치 사거리 검증을 하지 않는다. ranger는 조준 방향만 쓰고(레이 길이는 이미 `Range`), arcanist는 조준 위치를 캐릭터 기준 `Range` 안으로 **잘라서(clamp)** 쓴다. 쿨다운·직업·생존 검증은 그대로 둔다.
+   - 확인: 사거리 판정 함수를 분리하고 `CombatService.spec.luau`에 아래 4건을 PASS/FAIL로 출력한다 — guardian이 200스터드 밖 조준 → 허용 / ranger가 500스터드 밖 조준 → 허용(방향만) / arcanist가 300스터드 밖 조준 → 조준점이 80스터드 이내로 잘림 / 쿨다운 안 재공격 → 거부.
+2. **[중간] 직업을 아무 때나 다시 골라 체력을 가득 채울 수 있음** — `src/server/Combat/ClassService.server.luau`의 `chooseEvent.OnServerEvent`
+   - 고칠 것: 이미 `Class` 어트리뷰트가 있으면 무시한다(한 경기에 한 번). 선택 UI도 고른 뒤에는 닫힌다.
+3. **[낮음] 넘치는 피해까지 피해량으로 기록됨** — `EnemyFactory.damage`가 실제로 깎은 체력(남은 체력과 피해 중 작은 값)을 함께 돌려주고, `CombatService.dealDamage`는 그 값만 `MatchStats.recordDamage`에 넘긴다.
+4. **[낮음] 스크립트 시작 전에 들어온 플레이어 누락 가능** — `ClassService`도 `CombatService`처럼 시작 시 `Players:GetPlayers()`를 한 번 돌며 같은 연결을 건다.
+
 ## 1단계: 화면에 보낼 웨이브 정보 (`src/server/Director/`)
 - `ReplicatedStorage.DirectorState`(StringValue, JSON)에 아래 필드를 담는다. 기존 `wave`, `source`, `plan` 필드는 유지하되, **클라이언트용 글자는 새 필드만 쓴다.**
   - `phase`: `"wave"`(전투 중) 또는 `"intermission"`(대기)
@@ -76,3 +86,5 @@ GAME_DESIGN.md의 "이벤트 효과" 그대로 구현한다. 웨이브 시작 �
 - [ ] 이벤트 웨이브에서 안개/정예/증원 지연/핏빛 달 효과가 보이고, 다음 웨이브에서 원래대로 돌아옴
 - [ ] 등불 체력 막대가 줄어들고 30% 이하에서 붉게 깜빡임
 - [ ] 명령줄에서 `DirectorState.spec` 실행 → 모두 PASS
+- [ ] 명령줄에서 `CombatService.spec` 실행 → 모두 PASS, guardian으로 멀리 클릭해도 앞쪽 적이 맞음
+- [ ] 직업을 고른 뒤 다시 고를 수 없음

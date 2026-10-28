@@ -185,6 +185,8 @@ local function onChanged()
 	lastPhase = data.phase
 	lastSource = data.source
 	lastData = data
+	-- 결과 화면이 맡는 동안은 배너를 숨긴다.
+	frame.Visible = data.phase ~= "result"
 	render()
 	refreshCountdown()
 end

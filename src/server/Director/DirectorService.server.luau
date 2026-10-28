@@ -30,6 +30,17 @@ local CombatService = require(DirectorFolder.Parent:WaitForChild("Combat"):WaitF
 
 local SPAWN_INTERVAL = 1.0 -- 적 한 마리씩 꺼내는 간격(초)
 local WAVE_TIMEOUT = 180 -- 웨이브 강제 종료까지 최대 대기(초)
+local NPC_SAVE_TIMEOUT = 25 -- 서버 종료 시 기억 저장을 기다리는 상한(초)
+
+-- 경기 종료 처리(요약 + 저장)가 진행 중이면 true. BindToClose가 보고 기다린다.
+local npcSaveInProgress = false
+game:BindToClose(function()
+	local waited = 0
+	while npcSaveInProgress and waited < NPC_SAVE_TIMEOUT do
+		task.wait(0.5)
+		waited += 0.5
+	end
+end)
 
 local function lanternHealth(lantern)
 	return lantern:GetAttribute("Health") or 0
@@ -298,6 +309,7 @@ end
 -- NPC 기억: 이번 경기 기록을 저장하고 다음 판 대사를 미리 받아 둔다.
 -- 모델 호출은 경기가 끝난 뒤 1회만. 실패해도 경기 흐름은 막지 않는다.
 local function finishNpcMemory(result)
+	npcSaveInProgress = true
 	local ok, err = pcall(function()
 		local userIds = {}
 		for _, player in ipairs(Players:GetPlayers()) do
@@ -307,6 +319,7 @@ local function finishNpcMemory(result)
 			return NpcClient.summarize(previous, events)
 		end)
 	end)
+	npcSaveInProgress = false
 	if not ok then
 		warn("[Npc] 경기 종료 처리 실패: " .. tostring(err))
 	end

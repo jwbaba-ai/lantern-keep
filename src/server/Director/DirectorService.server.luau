@@ -11,6 +11,9 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local FallbackWaves = require(Shared:WaitForChild("FallbackWaves"))
 
+local WorldFolder = script.Parent.Parent:WaitForChild("World")
+local GateHighlight = require(WorldFolder:WaitForChild("GateHighlight"))
+
 local DirectorFolder = script.Parent
 local DirectorClient = require(DirectorFolder:WaitForChild("DirectorClient"))
 local WaveValidator = require(DirectorFolder:WaitForChild("WaveValidator"))
@@ -158,6 +161,8 @@ for wave = 1, Config.TotalWaves do
 		scaledTotal
 	))
 	logPlan(wave, currentSource, playPlan)
+	-- 웨이브 시작: 성문 강조를 끄고 원래 색으로 되돌린다.
+	GateHighlight.stop(map)
 	DirectorState.publish(state, {
 		phase = "wave",
 		displayWave = wave,
@@ -234,11 +239,14 @@ for wave = 1, Config.TotalWaves do
 		directorNote = nextPlan.director_note,
 		intermissionEndsAt = intermissionEndsAt(rest),
 	})
+	-- 다음 웨이브가 정해지면 대기 시간 동안 공격 성문을 깜빡인다.
+	GateHighlight.start(map, DirectorState.lanesOf(nextPlan))
 	if rest > 0 then
 		task.wait(rest)
 	end
 end
 
+GateHighlight.stop(map)
 if lanternHealth(lantern) <= 0 then
 	print("[Director] match over result=defeat waves_completed=" .. wavesCompleted)
 else

@@ -211,6 +211,8 @@ local function render()
 		artImage.Image = art
 		artLayer.Visible = true
 	else
+		-- 그림이 없으면 자리를 남기지 않는다 (이전 웨이브 그림도 비운다).
+		artImage.Image = ""
 		artLayer.Visible = false
 	end
 	-- 디렉터 표식: muse 웨이브에만 배지 옆에 작게 붙인다.

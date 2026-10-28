@@ -10,7 +10,15 @@ return {
 
 	-- Match
 	AutoKillWhenNoPlayers = true, -- 플레이어가 없으면(자동 테스트) 체력 비례 타이머로 적 처치
-	TotalWaves = 7,
+	TotalWaves = 10, -- Day별 웨이브 수의 최댓값(= FallbackWaves 개수). 한 판의 웨이브 수로는 더 이상 쓰지 않는다
+	-- Day 단계 (day8): 짧게 시작해서 점점 길고 강하게. Day 6 이상은 DayWaveCounts 마지막 값(10)을 쓴다.
+	DayWaveCounts = { 3, 5, 7, 9, 10 }, -- Day 1~5의 웨이브 수
+	BossFromDay = 5, -- 이 Day부터 마지막 웨이브에 보스가 나온다
+	DayScaleFromDay = 6, -- 이 Day부터 적 체력·수가 늘어난다
+	DayHealthStep = 0.15, -- Day당 적 체력 증가분 (상한 DayHealthMax)
+	DayCountStep = 0.10, -- Day당 적 수 증가분 (상한 DayCountMax)
+	DayHealthMax = 2.5, -- 적 체력 배율 상한
+	DayCountMax = 1.6, -- 적 수 배율 상한
 	IntermissionSeconds = 20,
 	MatchStartWaitSeconds = 20, -- 웨이브 1 전 로비 대기 상한(초). 지나도 0명이면 자동 테스트로 진행
 	MatchRestartSeconds = 15, -- 결과 화면을 보여 주는 시간(초). 기억 저장이 더 오래 걸리면 그만큼 더 기다린다

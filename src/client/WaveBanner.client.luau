@@ -98,7 +98,10 @@ artDim.Parent = artLayer
 -- UIListLayout은 이 안에만 둔다.
 local textFrame = Instance.new("Frame")
 textFrame.Name = "Text"
-textFrame.Size = UDim2.new(1, 0, 1, 0)
+-- 고정 크기 + 중앙 앵커: 안쪽 UIScale이 한 번만 걸려 컨테이너와 같은 크기가 된다.
+textFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+textFrame.Position = UDim2.fromScale(0.5, 0.5)
+textFrame.Size = UDim2.fromOffset(520, 150)
 textFrame.BackgroundTransparency = 1
 textFrame.ZIndex = 2
 textFrame.Parent = frame
@@ -155,12 +158,19 @@ local aiNotice = makeLabel("AINotice", 6, 13, Color3.fromRGB(160, 160, 160))
 -- 컨테이너 크기는 화면 배율에 맞추고, 글자는 안쪽 UIScale로 맞춘다.
 -- iPhone 가로(844x390, 배율 0.55)면 높이가 약 83으로 화면의 35% 안에 든다.
 local BASE_W, BASE_H = 520, 150
+local BASE_BADGE = 40
 local function applyBannerScale(s)
 	frame.Size = UDim2.fromOffset(
 		math.floor(BASE_W * s + 0.5),
 		math.floor(BASE_H * s + 0.5)
 	)
 	textUiScale.Scale = s
+	-- 디렉터 표식도 같은 배율을 받는다.
+	directorBadge.Size = UDim2.fromOffset(
+		math.floor(BASE_BADGE * s + 0.5),
+		math.floor(BASE_BADGE * s + 0.5)
+	)
+	directorBadge.Position = UDim2.new(1, -math.floor(6 * s + 0.5), 0, math.floor(6 * s + 0.5))
 end
 UiScale.watch(applyBannerScale)
 

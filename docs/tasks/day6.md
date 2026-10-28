@@ -60,7 +60,7 @@ Muse Code의 Muse Image 기능으로 아래 이미지를 PNG로 만들어 `asset
 - `docs/ORIGINS.md` 표에 `assets/images/*.png | 신규 | Muse Image로 해커톤 기간 생성 | 2026-11-01` 형식으로 기록한다.
 - 생성 횟수가 이미지당 3번을 넘으면 멈추고 보고한다(크레딧 보호).
 
-## 4단계: 에셋 ID 연결 (`src/shared/AssetIds.luau` 새 파일 — 사람 승인 대기: 승인 표시가 없으면 4단계부터 멈추고 보고)
+## 4단계: 에셋 ID 연결 (`src/shared/AssetIds.luau` 새 파일 — 사람(Babazz) 승인됨 2026-10-28)
 - 아래 키를 가진 테이블을 만들고, 모든 값은 `0`으로 둔다. 업로드는 사람이 크리에이터 허브에서 하고, 받은 ID를 직접 채운다.
   - `PortraitBram`, `PortraitMira`, `BannerDirector`, `BannerFog`, `BannerElite`, `BannerReinforcement`, `BannerBloodMoon`
 - 값이 `0`이면 그 그림 없이 지금처럼 글자만 보여 준다. 오류나 빈 사각형이 보이면 안 된다.

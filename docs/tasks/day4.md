@@ -24,6 +24,12 @@ day3 devlog의 체크리스트에 사람이 남긴 메모가 있으면 먼저 �
    - 고칠 것: 이미 `Class` 어트리뷰트가 있으면 무시한다(한 경기에 한 번). 선택 UI도 고른 뒤에는 닫힌다.
 3. **[낮음] 넘치는 피해까지 피해량으로 기록됨** — `EnemyFactory.damage`가 실제로 깎은 체력(남은 체력과 피해 중 작은 값)을 함께 돌려주고, `CombatService.dealDamage`는 그 값만 `MatchStats.recordDamage`에 넘긴다.
 4. **[낮음] 스크립트 시작 전에 들어온 플레이어 누락 가능** — `ClassService`도 `CombatService`처럼 시작 시 `Players:GetPlayers()`를 한 번 돌며 같은 연결을 건다.
+5. **[높음] 혼자 플레이하면 웨이브 3에서 패배** (Studio MCP 테스트 2회 모두 `match over result=defeat waves_completed=3`, 웨이브 2 종료 시 등불 19~24%)
+   - 원인: day3에서 플레이어가 있으면 테스트 처치를 끄는데, `FallbackWaves`와 적 수치는 테스트 처치를 전제로 맞춰져 있었다.
+   - 고칠 것: **파티 인원 보정**을 넣는다. 웨이브 계획(디렉터·대체 모두)이 검증을 통과한 **뒤** 적용 직전에, 적 `count`를 인원 배율로 줄인다(올림, 최소 1). Config 새 키 `PartyCountScale = { 0.5, 0.7, 0.85, 1.0 }`(1~4인), `PartyHealthScale = { 0.6, 0.8, 0.9, 1.0 }`(적 체력 배율, `EnemyFactory.spawn`에서 적용). 기존 Config 값과 `FallbackWaves`·`EnemyCatalog` 수치는 바꾸지 않는다.
+   - 디렉터에게 보내는 요약은 그대로 둔다(인원은 `players` 길이로 이미 전달됨). 보정 결과는 `[Director] wave=N party=1 scaled_enemies=12` 한 줄로 남긴다.
+   - 확인: `PartyScale.spec.luau`에서 1인·4인 각각 같은 계획을 보정해 적 수 합계와 체력 배율을 PASS/FAIL로 출력한다(1인: 원래 합계의 약 절반, 각 항목 최소 1 / 4인: 원래와 같음).
+6. **[낮음] 패배로 끝나도 `timeout` 로그가 찍힘** — `DirectorService.playWave`에서 등불 0으로 빠져나온 경우 `timeout: 남은 적 정리 후 계속한다` 대신 `[Director] wave=N lantern destroyed: 남은 적 정리`를 찍는다.
 
 ## 1단계: 화면에 보낼 웨이브 정보 (`src/server/Director/`)
 - `ReplicatedStorage.DirectorState`(StringValue, JSON)에 아래 필드를 담는다. 기존 `wave`, `source`, `plan` 필드는 유지하되, **클라이언트용 글자는 새 필드만 쓴다.**
@@ -88,3 +94,4 @@ GAME_DESIGN.md의 "이벤트 효과" 그대로 구현한다. 웨이브 시작 �
 - [ ] 명령줄에서 `DirectorState.spec` 실행 → 모두 PASS
 - [ ] 명령줄에서 `CombatService.spec` 실행 → 모두 PASS, guardian으로 멀리 클릭해도 앞쪽 적이 맞음
 - [ ] 직업을 고른 뒤 다시 고를 수 없음
+- [ ] 혼자 guardian으로 실제로 싸우면 웨이브 5 이상 버팀(못 버티면 배율 값을 devlog에 적고 보고), 명령줄 `PartyScale.spec` 모두 PASS

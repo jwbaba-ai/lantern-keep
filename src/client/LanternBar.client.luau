@@ -7,6 +7,7 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
+local UiScale = require(script.Parent:WaitForChild("UiScale"))
 
 local MAX_HEALTH = Config.LanternMaxHealth
 local LOW_PCT = 0.3
@@ -24,6 +25,13 @@ frame.Size = UDim2.new(0, 220, 0, 44)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 frame.BackgroundTransparency = 0.25
 frame.Parent = gui
+
+-- 휴대폰 배율: 화면이 바뀌면(회전) 다시 맞춘다.
+local frameScale = Instance.new("UIScale")
+frameScale.Parent = frame
+UiScale.watch(function(s)
+	frameScale.Scale = s
+end)
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 18)

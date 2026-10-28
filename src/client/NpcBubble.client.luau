@@ -21,6 +21,8 @@ local function portraitOf(npcKey)
 	return nil
 end
 
+local UiScale = require(script.Parent:WaitForChild("UiScale"))
+
 local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
 gui.Name = "NpcBubble"
@@ -101,6 +103,10 @@ local function showBubble(npcKey, text, isAI)
 	if isAI then
 		makeLabel("AI가 생성한 대사입니다", 18, Color3.fromRGB(160, 160, 160), 2).Parent = textCol
 	end
+	-- 휴대폰 배율: 말풍선은 새로 뜰 때마다 지금 화면 배율을 쓴다.
+	local bubbleScale = Instance.new("UIScale")
+	bubbleScale.Scale = UiScale.factor()
+	bubbleScale.Parent = bubble
 	bubble.Parent = gui
 	open[npcKey] = { bubble = bubble, token = token }
 	task.delay(6, function()

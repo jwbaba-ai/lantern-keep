@@ -13,6 +13,8 @@ local Config = require(Shared:WaitForChild("Config"))
 local assetIdsModule = Shared:FindFirstChild("AssetIds")
 local AssetIds = assetIdsModule and require(assetIdsModule) or nil
 
+local UiScale = require(script.Parent:WaitForChild("UiScale"))
+
 local function artOf(key)
 	if AssetIds then
 		return AssetIds.imageOrNil(key)
@@ -116,6 +118,10 @@ directorBadge.Parent = frame
 local scale = Instance.new("UIScale")
 scale.Parent = frame
 
+-- 휴대폰 배율: 트윈용 UIScale과 겹치지 않게 글자 프레임에 따로 둔다.
+local textUiScale = Instance.new("UIScale")
+textUiScale.Parent = textFrame
+
 local layout = Instance.new("UIListLayout")
 layout.Padding = UDim.new(0, 2)
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -132,15 +138,31 @@ local function makeLabel(name, order, size, color)
 	label.Text = ""
 	label.LayoutOrder = order
 	label.Parent = textFrame
+	local cap = Instance.new("UITextSizeConstraint")
+	cap.MaxTextSize = size
+	cap.Parent = label
 	return label
 end
 
-local titleLine = makeLabel("Title", 1, 30, Color3.new(1, 1, 1))
-local badgeLine = makeLabel("Badge", 2, 22, Color3.fromRGB(120, 220, 255))
-local noteLine = makeLabel("Note", 3, 24, Color3.new(1, 1, 1))
-local laneLine = makeLabel("Lanes", 4, 22, Color3.fromRGB(255, 230, 150))
-local countdownLine = makeLabel("Countdown", 5, 20, Color3.fromRGB(180, 255, 180))
-local aiNotice = makeLabel("AINotice", 6, 16, Color3.fromRGB(160, 160, 160))
+-- 배너 글자 줄 높이는 기존(30/22/24/22/20/16)의 약 80%다.
+local titleLine = makeLabel("Title", 1, 24, Color3.new(1, 1, 1))
+local badgeLine = makeLabel("Badge", 2, 18, Color3.fromRGB(120, 220, 255))
+local noteLine = makeLabel("Note", 3, 19, Color3.new(1, 1, 1))
+local laneLine = makeLabel("Lanes", 4, 18, Color3.fromRGB(255, 230, 150))
+local countdownLine = makeLabel("Countdown", 5, 16, Color3.fromRGB(180, 255, 180))
+local aiNotice = makeLabel("AINotice", 6, 13, Color3.fromRGB(160, 160, 160))
+
+-- 컨테이너 크기는 화면 배율에 맞추고, 글자는 안쪽 UIScale로 맞춘다.
+-- iPhone 가로(844x390, 배율 0.55)면 높이가 약 83으로 화면의 35% 안에 든다.
+local BASE_W, BASE_H = 520, 150
+local function applyBannerScale(s)
+	frame.Size = UDim2.fromOffset(
+		math.floor(BASE_W * s + 0.5),
+		math.floor(BASE_H * s + 0.5)
+	)
+	textUiScale.Scale = s
+end
+UiScale.watch(applyBannerScale)
 
 local lastPhase = nil
 local lastSource = nil

@@ -18,6 +18,8 @@ local function artOf(key)
 	return nil
 end
 
+local UiScale = require(script.Parent:WaitForChild("UiScale"))
+
 local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
 gui.Name = "ResultScreen"
@@ -32,6 +34,13 @@ frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 frame.BackgroundTransparency = 0.15
 frame.Visible = false
 frame.Parent = gui
+
+-- 휴대폰 배율: 화면이 바뀌면(회전) 다시 맞춘다.
+local frameScale = Instance.new("UIScale")
+frameScale.Parent = frame
+UiScale.watch(function(s)
+	frameScale.Scale = s
+end)
 
 local layout = Instance.new("UIListLayout")
 layout.Padding = UDim.new(0, 6)

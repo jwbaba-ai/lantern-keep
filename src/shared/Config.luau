@@ -23,6 +23,20 @@ return {
 	PartyHealthScale = { 0.6, 0.8, 0.9, 1.0 }, -- 1~4인 적 체력 배율
 	FogEndDuringEvent = 120, -- fog 이벤트 중 Lighting.FogEnd
 
+	-- NPC (day5): 기억 없음·필터 실패·해당 플레이어 없음 때 쓰는 기본 대사 (AI 고지 없음).
+	NpcDefaultLines = {
+		bram = {
+			"등불 곁에 서라. 이번에도 막아낸다.",
+			"첫 고비는 넘겼다. 방심은 금물이다.",
+			"절반이 코앞이다. 버텨라.",
+		},
+		mira = {
+			"오늘도 함께 싸워요! 다치지 마세요!",
+			"첫 웨이브 끝! 모두 무사해서 다행이에요.",
+			"조금만 더 힘내요! 제가 곁에 있을게요.",
+		},
+	},
+
 	Lanes = { "north", "south", "east", "west" },
 	EnemyTypes = { "Grunt", "Runner", "Brute", "Archer", "Shaman" },
 	Tactics = { "focus_weak_lane", "split_push", "flank", "siege" },

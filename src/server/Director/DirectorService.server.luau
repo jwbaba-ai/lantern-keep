@@ -299,25 +299,13 @@ end
 -- 모델 호출은 경기가 끝난 뒤 1회만. 실패해도 경기 흐름은 막지 않는다.
 local function finishNpcMemory(result)
 	local ok, err = pcall(function()
-		MatchRecord.finish(matchRecord, result, wavesCompleted)
 		local userIds = {}
 		for _, player in ipairs(Players:GetPlayers()) do
 			table.insert(userIds, player.UserId)
 		end
-		local store = MemoryStore.getStore()
-		local key = MemoryStore.partyKey(userIds)
-		local saved = MemoryStore.load(store, key) or {}
-		local newSaved, source = MemoryStore.finishMatch(
-			saved,
-			MatchRecord.toEvent(matchRecord),
-			#userIds,
-			function(previous, events)
-				return NpcClient.summarize(previous, events)
-			end
-		)
-		MemoryStore.save(store, key, newSaved)
-		print(string.format("[Npc] summarize source=%s party_size=%d", source, #userIds))
-		print(string.format("[Npc] saved events=%d", #newSaved.events))
+		MemoryStore.finishAndSave(matchRecord, result, wavesCompleted, userIds, function(previous, events)
+			return NpcClient.summarize(previous, events)
+		end)
 	end)
 	if not ok then
 		warn("[Npc] 경기 종료 처리 실패: " .. tostring(err))

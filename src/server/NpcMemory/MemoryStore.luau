@@ -3,7 +3,9 @@
 -- 저장 값: { events(최근 10개 경기 기록 요약), bram_memory, mira_memory,
 --   bram_lines, mira_lines, updated_at }. 오래된 것부터 버린다.
 -- 이 모듈은 require 때 게임 서비스에 닿지 않는다. DataStore 접근은
--- load·save·getStore 안에서만 일어나고, spec은 순수 함수만 쓴다.
+-- load·save·getStore·finishAndSave 안에서만 일어나고, spec은 순수 함수만 쓴다.
+local MatchRecord = require(script.Parent:WaitForChild("MatchRecord"))
+
 local MemoryStore = {
 	STORE_NAME = "NpcMemory_v1",
 	MAX_EVENTS = 10,
@@ -145,6 +147,29 @@ function MemoryStore.finishMatch(saved, event, partySize, summarizeFn)
 	end
 	saved.updated_at = os.time()
 	return saved, source
+end
+
+-- 경기 기록(record)을 확정하고 파티 기억에 반영한다: 불러오기 → 추가·요약 → 저장.
+-- summarizeFn(previous, events) → 응답 테이블(없으면 nil).
+-- DataStore 열기 실패는 에러를 던지므로 호출한 쪽이 pcall로 감싼다.
+-- 돌려값: saved, source.
+-- DirectorService(실제 경기 종료)와 NpcDebug(가짜 기록)가 같은 함수를 쓴다.
+function MemoryStore.finishAndSave(record, result, wavesCompleted, userIds, summarizeFn)
+	MatchRecord.finish(record, result, wavesCompleted)
+	local partySize = #(userIds or {})
+	local key = MemoryStore.partyKey(userIds)
+	local store = MemoryStore.getStore()
+	local saved = MemoryStore.load(store, key) or {}
+	local newSaved, source = MemoryStore.finishMatch(
+		saved,
+		MatchRecord.toEvent(record),
+		partySize,
+		summarizeFn
+	)
+	MemoryStore.save(store, key, newSaved)
+	print(string.format("[Npc] summarize source=%s party_size=%d", source, partySize))
+	print(string.format("[Npc] saved events=%d", #newSaved.events))
+	return newSaved, source
 end
 
 return MemoryStore

@@ -1,7 +1,8 @@
 -- 적 생성·이동 모듈 (타입별 색 구분 파트 + Health 어트리뷰트 + 이름 BillboardGui).
--- spawn(enemyType, lane, waypoints, lantern, onResolved):
+-- spawn(enemyType, lane, waypoints, lantern, onResolved, mods):
 --   waypoints를 순서대로 Tween 이동하고, 등불에 닿으면 등불 Health를 깎은 뒤 제거한다.
 --   onResolved(enemyType, lane, how) -- how는 "arrived" 또는 "killed".
+--   mods(선택): { healthMult, sizeMult, namePrefix } — 이벤트 효과용.
 -- 테스트용 처치: 플레이어가 없을 때만 생성 후 체력 비례 시간
 -- (Health * TimePerHealth)이 지나면 "killed"로 처리한다.
 -- (TimePerHealth=0.15이면 Brute만 등불까지 닿는다. FallbackWaves 주석 참고.)
@@ -56,7 +57,8 @@ function EnemyFactory.damage(body, amount)
 	return { status = "alive", dealt = dealt }
 end
 
-function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved)
+-- mods(선택): { healthMult, sizeMult, namePrefix } — 이벤트 효과용.
+function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved, mods)
 	local spec = EnemyCatalog[enemyType]
 	if not spec or #waypoints == 0 then
 		return nil
@@ -64,11 +66,16 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved)
 
 	-- 파티 인원 보정: 적 체력 배율 (Config.PartyHealthScale, 스폰 시점 인원 기준).
 	local partySize = math.clamp(#Players:GetPlayers(), 1, 4)
-	local maxHp = math.max(1, math.floor(spec.Health * Config.PartyHealthScale[partySize] + 0.5))
+	local eventMult = (mods and mods.healthMult) or 1
+	local maxHp = math.max(1, math.floor(spec.Health * Config.PartyHealthScale[partySize] * eventMult + 0.5))
 
 	local body = Instance.new("Part")
 	body.Name = enemyType
-	body.Size = spec.Size
+	if mods and mods.sizeMult then
+		body.Size = spec.Size * mods.sizeMult
+	else
+		body.Size = spec.Size
+	end
 	body.Position = waypoints[1]
 	body.Anchored = true
 	body.CanCollide = false
@@ -87,7 +94,7 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved)
 	label.BackgroundTransparency = 1
 	label.TextScaled = true
 	label.TextColor3 = Color3.new(1, 1, 1)
-	label.Text = enemyType
+	label.Text = ((mods and mods.namePrefix) or "") .. enemyType
 	label.Parent = gui
 	gui.Parent = body
 	body.Parent = getEnemiesFolder()

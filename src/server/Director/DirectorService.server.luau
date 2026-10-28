@@ -15,6 +15,7 @@ local WorldFolder = script.Parent.Parent:WaitForChild("World")
 local GateHighlight = require(WorldFolder:WaitForChild("GateHighlight"))
 
 local DirectorFolder = script.Parent
+local EventEffects = require(DirectorFolder:WaitForChild("EventEffects"))
 local DirectorClient = require(DirectorFolder:WaitForChild("DirectorClient"))
 local WaveValidator = require(DirectorFolder:WaitForChild("WaveValidator"))
 local DirectorState = require(DirectorFolder:WaitForChild("DirectorState"))
@@ -72,6 +73,9 @@ end
 local function playWave(map, lantern, wave, plan)
 	local tracker = MatchStats.new()
 	CombatService.beginWave(tracker)
+	-- 이벤트 효과 적용 (웨이브가 끝나면 원래 값으로 되돌린다).
+	local waveMods = EventEffects.apply(plan.event)
+	local spawnInterval = EventEffects.spawnInterval(plan.event, SPAWN_INTERVAL)
 	local waypointsByLane = {}
 	for _, lane in ipairs(Config.Lanes) do
 		waypointsByLane[lane] = getWaypoints(map, lane)
@@ -92,13 +96,14 @@ local function playWave(map, lantern, wave, plan)
 				entry.lane,
 				waypointsByLane[entry.lane],
 				lantern,
-				onResolved
+				onResolved,
+				EventEffects.nextSpawnMods(waveMods)
 			)
 			if body then
 				MatchStats.recordSpawn(tracker, entry.lane)
 				table.insert(bodies, body)
 			end
-			task.wait(SPAWN_INTERVAL)
+			task.wait(spawnInterval)
 		end
 		if lanternHealth(lantern) <= 0 then
 			break
@@ -125,6 +130,7 @@ local function playWave(map, lantern, wave, plan)
 			end
 		end
 	end
+	EventEffects.clear()
 	CombatService.endWave()
 	return tracker
 end

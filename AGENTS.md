@@ -37,7 +37,7 @@ Muse Code(주력)는 이 파일을, Claude Code(리뷰)는 CLAUDE.md(→ 이 파
 | `src/server/Director/` | 디렉터 호출, 검증, 대체 웨이브 | **Muse Code** |
 | `src/server/NpcMemory/` | 기억 저장, 요약, 대사 필터 | **Muse Code** |
 | `tools/`, `fixtures/` | PC 테스트 도구, 샘플 데이터 | **Muse Code** |
-| (리뷰 전용) | 코드 리뷰, 막혔을 때 두 번째 의견 | Claude Code — 파일을 직접 고치지 않고 제안만 |
+| `docs/tasks/`, `docs/HANDOFF.md` | 다음 날 지시 파일 작성, 코드 리뷰, Studio MCP 테스트·보고 | Claude Code — 게임 코드(`src/`)는 직접 고치지 않고 지시 파일로 Muse Code에 맡긴다 |
 | `docs/devlog/` | 날짜별 기록 | 작업한 에이전트가 끝날 때 한 줄 추가 |
 
 ## 해커톤 규칙 (참가자 가이드 기준, 위반 시 실격)

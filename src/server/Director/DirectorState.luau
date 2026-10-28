@@ -78,6 +78,11 @@ function DirectorState.buildState(args)
 			args.wavesCompleted or 0,
 			args.lanternHealthPct or 0
 		)
+	elseif args.phase == "lobby" then
+		-- 로비 고정 문구는 서버 코드에 적힌 글자라 필터 없이 그대로 쓴다.
+		-- 로비 시작 시점에는 플레이어가 0명이라 필터가 항상 실패한다.
+		displayName = args.waveName or ""
+		displayNote = args.directorNote or ""
 	elseif args.waveName == nil then
 		displayName = DirectorState.DESIGNING_TEXT
 		displayNote = ""

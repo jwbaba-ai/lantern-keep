@@ -169,4 +169,22 @@ do
 	)
 end
 
+-- 7. 로비: 플레이어 0명(필터 실패)에도 고정 문구가 그대로 나옴.
+do
+	local data = DirectorState.buildState({
+		phase = "lobby",
+		displayWave = 1,
+		source = "pending",
+		plan = nil,
+		waveName = "곧 시작합니다",
+		directorNote = "",
+		intermissionEndsAt = 123.0,
+		filterFn = failingFilter,
+	})
+	check(
+		"lobby_fixed_text_without_filter",
+		data.display_name == "곧 시작합니다"
+	)
+end
+
 return results

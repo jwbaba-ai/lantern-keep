@@ -5,3 +5,10 @@
 *.rbxl.lock
 __pycache__/
 tools/out/
+.venv/
+.muse/
+.eden/
+.hg/
+.sl/
+.agents/
+tmp*/

@@ -46,6 +46,16 @@ return {
 		},
 	},
 
+	-- 지원대 (day8b): 로비 투표로 빈자리를 채우는 규칙 기반 동료. 모델을 호출하지 않는다.
+	SupportMaxParty = 4, -- 사람 + 지원대 최대 인원
+	SupportRespawnSeconds = 10,
+	SupportRetargetSeconds = 5, -- 협력파가 목표 성문을 다시 고르는 간격
+	SupportHealBelowPct = 0.6, -- 협력파 cleric이 치유를 시작하는 체력 비율
+	SupportSquads = {
+		solo = { label = "각개전투파", roles = { "guardian", "ranger", "arcanist", "ranger" } },
+		coop = { label = "협력파", roles = { "guardian", "cleric", "ranger", "arcanist" } },
+	},
+
 	Lanes = { "north", "south", "east", "west" },
 	EnemyTypes = { "Grunt", "Runner", "Brute", "Archer", "Shaman" },
 	Tactics = { "focus_weak_lane", "split_push", "flank", "siege" },

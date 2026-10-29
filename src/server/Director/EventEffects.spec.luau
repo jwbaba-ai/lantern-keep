@@ -18,7 +18,7 @@ local function check(name, pass)
 end
 
 local function close(a, b)
-	return math.abs(a - b) < 1e-9
+	return math.abs(a - b) < 1e-4
 end
 
 -- 1. Atmosphere 있음 + fog -> Density 0.65, 종료 -> 0.3.

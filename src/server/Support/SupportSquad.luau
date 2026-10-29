@@ -75,6 +75,56 @@ function SupportSquad.koreanRoleName(role)
 	return ROLE_KO[role] or role
 end
 
+-- 생성 자리 규칙. 등불 주위 반지름 6 원 위에 서로 다른 각도로 둔다.
+-- 처음 생길 때는 lanes를 모르니 인원 수로 나눈 자리,
+-- 리스폰 때는 맡은 성문 쪽 자리를 쓴다. 이미 생긴 지원대는
+-- 그대로 걸어가고(텔레포트 아님), 자리 규칙은 생성·리스폰에만 쓴다.
+local SPAWN_RADIUS = 6
+
+-- 인원 n명의 생성 자리 n개(등불 기준 상대 오프셋).
+function SupportSquad.spawnOffsets(n, radius)
+	radius = radius or SPAWN_RADIUS
+	n = math.max(0, n or 0)
+	local out = {}
+	for i = 1, n do
+		local angle = ((i - 1) / math.max(n, 1)) * math.pi * 2 + math.pi / 4
+		table.insert(out, Vector3.new(math.cos(angle) * radius, 3, math.sin(angle) * radius))
+	end
+	return out
+end
+
+-- 맡은 성문 쪽 자리 오프셋(북=-Z, 동=+X, 남=+Z, 서=-X).
+local LANE_ANGLES = {
+	north = -math.pi / 2,
+	east = 0,
+	south = math.pi / 2,
+	west = math.pi,
+}
+
+function SupportSquad.laneSpawnOffset(lane, radius)
+	radius = radius or SPAWN_RADIUS
+	local angle = LANE_ANGLES[lane]
+	if angle == nil then
+		return Vector3.new(0, 3, 0)
+	end
+	return Vector3.new(math.cos(angle) * radius, 3, math.sin(angle) * radius)
+end
+
+-- 맡은 성문 쪽 생성 자리(월드 좌표). 실제 성문 위치가 있으면
+-- 그쪽 방향으로, 없으면 고정 각도로 둔다.
+local function laneSpawnPoint(map, lantern, lane)
+	local gates = map:FindFirstChild("Gates")
+	local gate = gates and gates:FindFirstChild(lane)
+	if gate and gate:IsA("BasePart") then
+		local d = gate.Position - lantern
+		local flat = Vector3.new(d.X, 0, d.Z)
+		if flat.Magnitude > 0.01 then
+			return lantern + flat.Unit * SPAWN_RADIUS + Vector3.new(0, 3, 0)
+		end
+	end
+	return lantern + SupportSquad.laneSpawnOffset(lane)
+end
+
 local bots = {} -- 살아 있는 지원대 테이블 배열
 local lastReport = {} -- 판 끝 보고용 스냅샷
 local currentChoice = "none"
@@ -423,7 +473,12 @@ function SupportSquad.onBotDied(bot)
 			return
 		end
 		local map = getMap()
-		buildModel(bot, currentChoice, map, lanternPosition(map) + Vector3.new(0, 3, 0))
+		local lantern = lanternPosition(map)
+		local spawnAt = lantern + SupportSquad.laneSpawnOffset(bot.lane)
+		if bot.lane then
+			spawnAt = laneSpawnPoint(map, lantern, bot.lane)
+		end
+		buildModel(bot, currentChoice, map, spawnAt)
 		if bot.lane then
 			moveBot(bot, innerPoint(map, bot.lane))
 		end
@@ -735,6 +790,7 @@ function SupportSquad.spawnMatch(choice, count)
 	local map = getMap()
 	local lantern = lanternPosition(map)
 	local roles = SupportSquad.rolesFor(choice, count)
+	local slots = SupportSquad.spawnOffsets(#roles)
 	for i, role in ipairs(roles) do
 		local bot = {
 			UserId = -i,
@@ -750,7 +806,7 @@ function SupportSquad.spawnMatch(choice, count)
 			lastSeen = 0,
 		}
 		table.insert(bots, bot)
-		buildModel(bot, choice, map, lantern + Vector3.new((i - 2.5) * 4, 3, 8))
+		buildModel(bot, choice, map, lantern + slots[i])
 	end
 	generation += 1
 	local gen = generation

@@ -115,4 +115,35 @@ do
 	)
 end
 
+-- 9. 인원 n명이면 생성 자리 n개가 서로 4스터드 이상.
+-- 처음 생성 자리(spawnOffsets 1~4명)와 맡은 성문 쪽 자리(4성문) 모두 본다.
+do
+	local ok = true
+	for n = 1, 4 do
+		local slots = SupportSquad.spawnOffsets(n)
+		if #slots ~= n then
+			ok = false
+		end
+		for i = 1, #slots do
+			for j = i + 1, #slots do
+				if (slots[i] - slots[j]).Magnitude < 4 then
+					ok = false
+				end
+			end
+		end
+	end
+	local spots = {}
+	for _, lane in ipairs({ "north", "south", "east", "west" }) do
+		table.insert(spots, SupportSquad.laneSpawnOffset(lane))
+	end
+	for i = 1, #spots do
+		for j = i + 1, #spots do
+			if (spots[i] - spots[j]).Magnitude < 4 then
+				ok = false
+			end
+		end
+	end
+	check("spawn_slots_separated", ok)
+end
+
 return results

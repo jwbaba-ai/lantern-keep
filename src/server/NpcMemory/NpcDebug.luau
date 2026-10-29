@@ -35,6 +35,38 @@ function NpcDebug.debugSetDay(n)
 	print("[Npc] debugSetDay: 다음 판 Day=" .. n)
 end
 
+-- 디버그: 다음 로비의 투표 결과를 choice로 정한다.
+-- 투표를 무시하고, 로그에 forced를 표시한다.
+-- 사람이 0명이면 지원대 4명만으로 실제 전투를 진행한다.
+-- 실행법(Studio 명령줄):
+--   require(game.ServerScriptService.Server.NpcMemory["NpcDebug"]).debugSupport("coop")
+function NpcDebug.debugSupport(choice)
+	assert(choice == "solo" or choice == "coop" or choice == "none", "debugSupport: choice는 solo|coop|none")
+	ReplicatedStorage:SetAttribute("DebugSupport", choice)
+	print("[Npc] debugSupport: 다음 로비 투표 결과를 " .. choice .. "로 정한다 (forced)")
+end
+
+-- 디버그: 지원대별 역할·맡은 성문·피해·사망을 한 줄씩 출력한다.
+-- 실행법(Studio 명령줄):
+--   require(game.ServerScriptService.Server.NpcMemory["NpcDebug"]).debugSupportReport()
+function NpcDebug.debugSupportReport()
+	local SupportSquad = require(
+		NpcFolder.Parent:WaitForChild("Support"):WaitForChild("SupportSquad")
+	)
+	local bots = SupportSquad.reportBots()
+	print(string.format("[Support] report choice=%s bots=%d", SupportSquad.getChoice(), #bots))
+	for _, bot in ipairs(bots) do
+		print(string.format(
+			"[Support] %s role=%s lane=%s damage=%d deaths=%d",
+			bot.Name,
+			bot.role,
+			bot.lane or "-",
+			bot.damage or 0,
+			bot.deaths or 0
+		))
+	end
+end
+
 function NpcDebug.debugEndMatch()
 	local userIds = {}
 	for _, player in ipairs(Players:GetPlayers()) do

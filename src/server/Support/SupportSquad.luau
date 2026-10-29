@@ -3,6 +3,7 @@
 -- 지원대는 모델을 호출하지 않는다. 전투 중 모델 호출 금지 규칙 유지.
 -- 인원: SupportMaxParty - 사람 수(0 이상). roles 앞에서부터 그 수만큼 쓴다.
 local HttpService = game:GetService("HttpService")
+local PhysicsService = game:GetService("PhysicsService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -45,6 +46,21 @@ local COHESION_OFFSETS = {
 	Vector3.new(0, 0, 3),
 	Vector3.new(0, 0, -3),
 }
+
+-- 지원대끼리 충돌하지 않게 하는 충돌 그룹. Support끼리는 끄고,
+-- 바닥·성벽·적·사람(기본 그룹)과는 그대로 충돌한다.
+local SUPPORT_GROUP = "Support"
+
+local function ensureSupportCollisionGroup()
+	pcall(function()
+		PhysicsService:RegisterCollisionGroup(SUPPORT_GROUP)
+	end)
+	pcall(function()
+		PhysicsService:CollisionGroupSetCollidable(SUPPORT_GROUP, SUPPORT_GROUP, false)
+	end)
+end
+
+ensureSupportCollisionGroup()
 
 -- 이름표용 직업 한글 표. ClassCatalog(src/shared)는 고치지 않는다.
 local ROLE_KO = {
@@ -328,6 +344,13 @@ local function buildModel(bot, choice, map, spawnAt)
 		label.TextColor3 = Color3.new(1, 1, 1)
 		label.Text = string.format("지원대 · %s · %s", squadLabel, display)
 		label.Parent = tag
+	end
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			pcall(function()
+				part.CollisionGroup = SUPPORT_GROUP
+			end)
+		end
 	end
 	model:PivotTo(CFrame.new(spawnAt))
 	model.Parent = getSupportFolder()

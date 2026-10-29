@@ -120,6 +120,53 @@ function SupportSquad.reportBots()
 	return lastReport
 end
 
+-- 테스트용 공유 상태. Studio 명령줄·MCP에서 require하면 게임이 쓰는
+-- SupportSquad와 다른 사본이 실행돼서 reportBots()가 빈 값을 낸다.
+-- 그래서 지원대 상태(유형·역할·맡은 성문·위치·피해·사망)를 ReplicatedStorage의
+-- StringValue "SupportDebug"(JSON)에 1초마다 써 둔다. 화면 표시용이 아니다.
+local function getDebugValue()
+	local v = ReplicatedStorage:FindFirstChild("SupportDebug")
+	if v and v:IsA("StringValue") then
+		return v
+	end
+	if v then
+		v:Destroy()
+	end
+	local created = Instance.new("StringValue")
+	created.Name = "SupportDebug"
+	created.Value = ""
+	created.Parent = ReplicatedStorage
+	return created
+end
+
+local function writeDebugSnapshot()
+	local entry = { choice = currentChoice, bots = {} }
+	for _, bot in ipairs(bots) do
+		local pos = nil
+		local model = bot.Character
+		local root = model and model:FindFirstChild("HumanoidRootPart")
+		if root and root:IsA("BasePart") then
+			pos = root.Position
+		end
+		table.insert(entry.bots, {
+			name = bot.Name,
+			role = bot.role,
+			lane = bot.lane,
+			damage = bot.damage or 0,
+			deaths = bot.deaths or 0,
+			x = pos and pos.X or nil,
+			y = pos and pos.Y or nil,
+			z = pos and pos.Z or nil,
+		})
+	end
+	local ok, json = pcall(HttpService.JSONEncode, HttpService, entry)
+	if ok then
+		pcall(function()
+			getDebugValue().Value = json
+		end)
+	end
+end
+
 -- 성문별 적 수(lanes 테이블)와 사람이 서 있는 성문 목록을 받아
 -- 지원대 n명이 맡을 성문을 정한다. 적이 많은 순, 사람이 있는 성문은 뒤로.
 function SupportSquad.assignSoloLanes(laneCounts, humanLanes, n)
@@ -638,6 +685,7 @@ function SupportSquad.spawnMatch(choice, count)
 	end
 	generation += 1
 	local gen = generation
+	writeDebugSnapshot()
 	task.spawn(function()
 		while gen == generation do
 			task.wait(0.25)
@@ -645,6 +693,18 @@ function SupportSquad.spawnMatch(choice, count)
 				if bot.active then
 					tickBot(bot)
 				end
+			end
+		end
+	end)
+	task.spawn(function()
+		while gen == generation do
+			task.wait(1)
+			if gen ~= generation then
+				break
+			end
+			local ok, err = pcall(writeDebugSnapshot)
+			if not ok then
+				warn("[Support] debug snapshot failed: " .. tostring(err))
 			end
 		end
 	end)

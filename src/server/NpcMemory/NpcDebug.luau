@@ -4,6 +4,7 @@
 --   require(game.ServerScriptService.Server.NpcMemory["NpcDebug"]).debugEndMatch()
 -- 가짜 기록: 웨이브 3 북문 돌파, cleric 부활 2회, 패배.
 -- 실제 경기 종료와 같은 MemoryStore.finishAndSave를 쓰므로 저장·요약·로그가 같다.
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -46,10 +47,38 @@ function NpcDebug.debugSupport(choice)
 	print("[Npc] debugSupport: 다음 로비 투표 결과를 " .. choice .. "로 정한다 (forced)")
 end
 
--- 디버그: 지원대별 역할·맡은 성문·피해·사망을 한 줄씩 출력한다.
+-- 디버그: 지원대별 역할·맡은 성문·위치·피해·사망을 한 줄씩 출력한다.
+-- 게임이 쓰는 SupportSquad와 다른 사본을 읽는 문제를 피하려고
+-- ReplicatedStorage의 StringValue "SupportDebug"(JSON)를 먼저 읽는다.
+-- 값이 없으면 같은 VM의 SupportSquad를 직접 읽는 예전 방식으로 돌린다.
 -- 실행법(Studio 명령줄):
 --   require(game.ServerScriptService.Server.NpcMemory["NpcDebug"]).debugSupportReport()
 function NpcDebug.debugSupportReport()
+	local v = ReplicatedStorage:FindFirstChild("SupportDebug")
+	if v and v:IsA("StringValue") and v.Value ~= "" then
+		local ok, data = pcall(HttpService.JSONDecode, HttpService, v.Value)
+		if ok and type(data) == "table" and type(data.bots) == "table" then
+			print(string.format(
+				"[Support] report choice=%s bots=%d (SupportDebug)",
+				tostring(data.choice),
+				#data.bots
+			))
+			for _, bot in ipairs(data.bots) do
+				print(string.format(
+					"[Support] %s role=%s lane=%s damage=%d deaths=%d pos=(%.1f, %.1f, %.1f)",
+					tostring(bot.name),
+					tostring(bot.role),
+					tostring(bot.lane),
+					tonumber(bot.damage) or 0,
+					tonumber(bot.deaths) or 0,
+					tonumber(bot.x) or 0,
+					tonumber(bot.y) or 0,
+					tonumber(bot.z) or 0
+				))
+			end
+			return
+		end
+	end
 	local SupportSquad = require(
 		NpcFolder.Parent:WaitForChild("Support"):WaitForChild("SupportSquad")
 	)

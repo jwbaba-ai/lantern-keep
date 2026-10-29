@@ -355,11 +355,57 @@ local function buildModel(bot, choice, map, spawnAt)
 	model:PivotTo(CFrame.new(spawnAt))
 	model.Parent = getSupportFolder()
 	bot.Character = model
+	bot.spawnAt = spawnAt
 	hum = model:FindFirstChildOfClass("Humanoid")
 	if hum then
+		-- 엉켜 올라가는 상태 방지: Climbing을 끈다.
+		pcall(function()
+			hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
+		end)
 		hum.Died:Connect(function()
 			SupportSquad.onBotDied(bot)
 		end)
+	end
+	-- 서버가 움직이는 모델이니 서버가 물리를 맡는다.
+	local root = model:FindFirstChild("HumanoidRootPart")
+	if root then
+		local ok, err = pcall(function()
+			root:SetNetworkOwner(nil)
+		end)
+		if not ok then
+			warn(string.format("[Support] network owner failed %s: %s", bot.Name, tostring(err)))
+		end
+	end
+end
+
+-- 엉켜 올라가는 안전망: 등불 높이보다 30스터드 넘게 높거나
+-- 그만큼 아래로 떨어지면 자기 생성 자리로 돌려놓는다.
+local UNSTUCK_ABOVE = 30
+local UNSTUCK_BELOW = 30
+
+local function checkUnstuck(map, lantern)
+	for _, bot in ipairs(bots) do
+		if bot.active and bot.spawnAt then
+			local model = bot.Character
+			local root = model and model:FindFirstChild("HumanoidRootPart")
+			if root and root:IsA("BasePart") then
+				local y = root.Position.Y
+				if y > lantern.Y + UNSTUCK_ABOVE or y < lantern.Y - UNSTUCK_BELOW then
+					local ok, err = pcall(function()
+						root.AssemblyLinearVelocity = Vector3.zero
+						model:PivotTo(CFrame.new(bot.spawnAt))
+					end)
+					if ok then
+						print(string.format("[Support] unstuck %s", bot.Name))
+						if bot.lane then
+							moveBot(bot, innerPoint(map, bot.lane))
+						end
+					else
+						warn("[Support] unstuck failed: " .. tostring(err))
+					end
+				end
+			end
+		end
 	end
 end
 
@@ -728,6 +774,15 @@ function SupportSquad.spawnMatch(choice, count)
 			local ok, err = pcall(writeDebugSnapshot)
 			if not ok then
 				warn("[Support] debug snapshot failed: " .. tostring(err))
+			end
+			local okUnstuck, errUnstuck = pcall(function()
+				local map = Workspace:FindFirstChild("Map")
+				if map then
+					checkUnstuck(map, lanternPosition(map))
+				end
+			end)
+			if not okUnstuck then
+				warn("[Support] unstuck check failed: " .. tostring(errUnstuck))
 			end
 		end
 	end)

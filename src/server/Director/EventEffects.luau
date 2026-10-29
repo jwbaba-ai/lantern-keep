@@ -10,17 +10,49 @@ local Config = require(Shared:WaitForChild("Config"))
 
 local EventEffects = {}
 
+-- fog 농도 (Atmosphere가 있으면 FogStart/FogEnd 대신 이 값을 쓴다.
+-- Roblox는 Atmosphere가 있을 때 Fog 값을 무시하기 때문이다).
+-- 기준 0.3은 MapDecor.applyLighting이 정한 밤 밀도다.
+EventEffects.FogAtmosphereDensity = 0.65
+EventEffects.BaseAtmosphereDensity = 0.3
+EventEffects.BloodMoonAmbient = Color3.fromRGB(140, 30, 30)
+EventEffects.BloodMoonOutdoorAmbient = Color3.fromRGB(90, 25, 25)
+
 local saved = nil -- apply 때 저장한 원래 조명 값
+
+-- 순수: fog이 건드리는 값. Atmosphere가 있으면 Density를, 없으면 FogEnd를 쓴다.
+function EventEffects.fogPlan(hasAtmosphere)
+	if hasAtmosphere then
+		return {
+			key = "Density",
+			apply = EventEffects.FogAtmosphereDensity,
+			restore = EventEffects.BaseAtmosphereDensity,
+		}
+	end
+	return { key = "FogEnd", apply = Config.FogEndDuringEvent }
+end
+
+-- 순수: blood_moon이 저장·복원하는 Lighting 키 목록.
+function EventEffects.bloodMoonKeys()
+	return { "Ambient", "OutdoorAmbient" }
+end
 
 -- 웨이브 시작 때 부르는 전역 효과. 스폰 공통 수정값을 돌려준다.
 function EventEffects.apply(event)
 	EventEffects.clear()
 	if event == "fog" then
-		saved = { FogStart = Lighting.FogStart, FogEnd = Lighting.FogEnd }
-		Lighting.FogEnd = Config.FogEndDuringEvent
+		local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
+		if atmo then
+			saved = { AtmosphereDensity = atmo.Density }
+			atmo.Density = EventEffects.FogAtmosphereDensity
+		else
+			saved = { FogStart = Lighting.FogStart, FogEnd = Lighting.FogEnd }
+			Lighting.FogEnd = Config.FogEndDuringEvent
+		end
 	elseif event == "blood_moon" then
-		saved = { Ambient = Lighting.Ambient }
-		Lighting.Ambient = Color3.fromRGB(140, 30, 30)
+		saved = { Ambient = Lighting.Ambient, OutdoorAmbient = Lighting.OutdoorAmbient }
+		Lighting.Ambient = EventEffects.BloodMoonAmbient
+		Lighting.OutdoorAmbient = EventEffects.BloodMoonOutdoorAmbient
 	end
 	local healthMult = 1
 	if event == "blood_moon" then
@@ -54,10 +86,20 @@ function EventEffects.clear()
 	if not saved then
 		return
 	end
-	for k, v in pairs(saved) do
-		pcall(function()
-			Lighting[k] = v
-		end)
+	if saved.AtmosphereDensity ~= nil then
+		local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
+		if atmo then
+			local density = saved.AtmosphereDensity
+			pcall(function()
+				atmo.Density = density
+			end)
+		end
+	else
+		for k, v in pairs(saved) do
+			pcall(function()
+				Lighting[k] = v
+			end)
+		end
 	end
 	saved = nil
 end

@@ -86,4 +86,22 @@ do
 	check("support_flag_kept_for_damager", found ~= nil and found.support == true)
 end
 
+-- 6. 목표까지 거리 > 4 → 이동 중(방향 돌리기 안 함).
+do
+	check(
+		"moving_when_far",
+		SupportSquad.isMovingToGoal(Vector3.new(0, 3, 0), Vector3.new(10, 3, 0)) == true
+	)
+end
+
+-- 7. 거리 ≤ 4 → 도착(경계 4 포함).
+do
+	check(
+		"arrived_when_close",
+		SupportSquad.isMovingToGoal(Vector3.new(0, 3, 0), Vector3.new(4, 3, 0)) == false
+			and SupportSquad.isMovingToGoal(Vector3.new(1, 3, 1), Vector3.new(1, 3, 1)) == false
+			and SupportSquad.isMovingToGoal(nil, Vector3.new(0, 3, 0)) == false
+	)
+end
+
 return results

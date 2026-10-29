@@ -209,7 +209,19 @@ local function moveBot(bot, point)
 	local hum = model and model:FindFirstChildOfClass("Humanoid")
 	if hum and hum.Health > 0 then
 		hum:MoveTo(point)
+		bot.lastMoveAt = os.clock()
 	end
+end
+
+-- 목표 지점까지의 거리. 4스터드보다 멀면 이동 중이다.
+local ARRIVE_RADIUS = 4
+
+-- 목표까지 거리 > 4 → 이동 중(방향 돌리기 안 함), ≤ 4 → 도착.
+function SupportSquad.isMovingToGoal(currentPos, goalPos)
+	if currentPos == nil or goalPos == nil then
+		return false
+	end
+	return (currentPos - goalPos).Magnitude > ARRIVE_RADIUS
 end
 
 local function getSupportFolder()
@@ -336,6 +348,28 @@ local function accumulateDamage(bot)
 	bot.lastSeen = dealt
 end
 
+-- 이동 중인지 본다. 맡은 성문 안쪽 목표에서 4스터드보다 멀면 이동 중이다.
+-- 이동 중에는 MoveTo를 끊지 않게 CFrame을 쓰지 않고,
+-- SupportRetargetSeconds마다 MoveTo를 다시 부른다(solo·coop 공통).
+local function updateMovement(bot, root)
+	if bot.lane == nil then
+		return false
+	end
+	local map = Workspace:FindFirstChild("Map")
+	if not map then
+		return false
+	end
+	local goal = innerPoint(map, bot.lane)
+	if not SupportSquad.isMovingToGoal(root.Position, goal) then
+		return false
+	end
+	local now = os.clock()
+	if now - (bot.lastMoveAt or 0) >= (Config.SupportRetargetSeconds or 5) then
+		moveBot(bot, goal)
+	end
+	return true
+end
+
 -- 지원대 1명의 한 틱. 직업 Cooldown마다 사거리 안에서 가장 가까운 적을 노린다.
 local function tickBot(bot)
 	local model = bot.Character
@@ -344,6 +378,7 @@ local function tickBot(bot)
 	if not hum or hum.Health <= 0 or not root then
 		return
 	end
+	local moving = updateMovement(bot, root)
 	local svc = combat()
 	if bot.role == "cleric" then
 		-- 반경 안에서 체력 비율이 가장 낮은 아군을 치유한다
@@ -365,10 +400,14 @@ local function tickBot(bot)
 	if not target then
 		return
 	end
-	-- 바라보는 방향을 적으로 돌린다(guardian 부채꼴 판정용).
-	local look = Vector3.new(target.Position.X, root.Position.Y, target.Position.Z)
-	if (look - root.Position).Magnitude > 0.01 then
-		root.CFrame = CFrame.lookAt(root.Position, look)
+	-- 도착한 뒤에만 몸 방향을 적 쪽으로 돌린다(이동 중에는 MoveTo를 끊지 않게
+	-- CFrame을 쓰지 않는다. 조준은 대상 위치를 그대로 쓰므로 몸 방향이 필요 없다).
+	-- 돌릴 때는 위치를 바꾸지 않는다.
+	if not moving then
+		local look = Vector3.new(target.Position.X, root.Position.Y, target.Position.Z)
+		if (look - root.Position).Magnitude > 0.01 then
+			root.CFrame = CFrame.lookAt(root.Position, look)
+		end
 	end
 	svc.performAttack(bot, bot.role, root, target.Position)
 	accumulateDamage(bot)

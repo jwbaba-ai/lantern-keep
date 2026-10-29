@@ -136,4 +136,32 @@ do
 	)
 end
 
+-- 12. event next_day: 승리 Day 1 → 2, 패배 Day 3 → 3.
+do
+	local win = MatchRecord.new({ 10, 20 })
+	MatchRecord.finish(win, "victory", 3, 1, 3, "none")
+	local lose = MatchRecord.new({ 10, 20 })
+	MatchRecord.finish(lose, "defeat", 1, 3, 7, "coop")
+	check(
+		"event_next_day",
+		MatchRecord.toEvent(win).next_day == 2 and MatchRecord.toEvent(lose).next_day == 3
+	)
+end
+
+-- 13. 현재 Day 2, 대사 "Day 1을 지켜내자" → 기본 대사(안전망 동작).
+do
+	local mismatch = NpcSpeech.dayMismatch("다시 Day 1을 지켜내자!", 2)
+	local line, isAI = "다시 Day 1을 지켜내자!", true
+	if mismatch then
+		line, isAI = "기본 대사", false
+	end
+	check("day_mismatch_uses_default", mismatch == true and line == "기본 대사" and isAI == false)
+end
+
+-- 14. 현재 Day 2, 대사 "Day 2도 함께" → AI 대사 그대로.
+do
+	local mismatch = NpcSpeech.dayMismatch("Day 2도 함께 싸워요!", 2)
+	check("day_match_keeps_ai", mismatch == false)
+end
+
 return results

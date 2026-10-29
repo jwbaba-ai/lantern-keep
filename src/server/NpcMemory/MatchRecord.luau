@@ -95,10 +95,18 @@ function MatchRecord.toEvent(record)
 	table.sort(players, function(a, b)
 		return a.slot < b.slot
 	end)
+	-- 대사는 끝난 판이 아니라 다음 판 시작 때 나온다. 모델이 다음 판 Day 번호를
+	-- 쓰게 next_day를 같이 넘긴다. 승리면 day + 1, 패배면 day다.
+	local day = record.day or 1
+	local nextDay = day
+	if record.result == "victory" then
+		nextDay = day + 1
+	end
 	return {
 		result = record.result,
 		waves_completed = record.waves_completed,
 		day = record.day,
+		next_day = nextDay,
 		total_waves = record.total_waves,
 		support_squad = record.support_squad or "none",
 		waves = waves,

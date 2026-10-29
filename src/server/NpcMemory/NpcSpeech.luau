@@ -41,4 +41,19 @@ function NpcSpeech.resolveLine(line, defaultLine, filterFn, names, partySize)
 	return NpcSpeech.substituteNames(filtered, names), true
 end
 
+-- Day 번호 안전망. 대사에 "Day 숫자"가 있는데 그 숫자가 지금 판 Day와
+-- 다르면 true다. 요약 시점(끝난 판)의 Day를 쓴 대사를 다음 판 시작 때
+-- 걸러내 기본 대사로 바꾸기 위한 것이다. Day 언급이 없으면 false다.
+function NpcSpeech.dayMismatch(text, currentDay)
+	if type(text) ~= "string" or type(currentDay) ~= "number" then
+		return false
+	end
+	for num in string.gmatch(text, "Day%s*(%d+)") do
+		if tonumber(num) ~= currentDay then
+			return true
+		end
+	end
+	return false
+end
+
 return NpcSpeech

@@ -144,6 +144,12 @@ local function say(npcKey, lineIndex)
 		names,
 		partySize
 	)
+	-- Day 번호 안전망: 대사의 Day가 지금 판 Day와 다르면 기본 대사로 바꾼다.
+	-- Day 속성이 없으면(초기화 전) 그대로 둔다.
+	local day = ReplicatedStorage:GetAttribute("Day")
+	if isAI and NpcSpeech.dayMismatch(text, day) then
+		text, isAI = defaultLine, false
+	end
 	npcSayEvent:FireAllClients({ npc = npcKey, text = text, isAI = isAI })
 end
 

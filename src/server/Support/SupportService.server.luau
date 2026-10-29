@@ -58,7 +58,8 @@ local function publish()
 	end)
 	local shown = {}
 	for _, entry in ipairs(list) do
-		table.insert(shown, { name = entry.name, choice = entry.choice })
+		-- userId는 로비 종료 조건(전원 투표 확인)이 읽는다. 화면에는 쓰지 않는다.
+		table.insert(shown, { name = entry.name, choice = entry.choice, userId = entry.userId })
 	end
 	-- 집계 결과(result·tie·tied·announce)는 finalizeLobby가 같은 값에 덧붙인다.
 	-- 여기서는 표 목록·개수만 갱신하고 집계 필드는 그대로 둔다.

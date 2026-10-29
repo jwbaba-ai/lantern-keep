@@ -1,5 +1,6 @@
 -- 지원대 투표 패널 (단일 기준: docs/tasks/day8b-support.md 3단계).
--- 로비 동안 배너 아래에 보인다. 버튼 3개(각개전투파·협력파·지원대 없이)와
+-- 로비 동안 보인다 (직업 선택 전에는 배너 아래, 선택 뒤에는 화면 가운데).
+-- 버튼 3개(각개전투파·협력파·지원대 없이)와
 -- 실시간 투표 현황(누가 무엇을 골랐는지, 표 수)을 보여 준다.
 -- 서버 코드에 적힌 고정 문구만 쓰므로 AI 고지는 붙이지 않는다.
 -- 로비가 끝나면 집계 알림(SupportState.announce)을 6초 동안 보여 준다.
@@ -39,12 +40,29 @@ frame.Parent = gui
 local frameScale = Instance.new("UIScale")
 frameScale.Parent = frame
 
--- 배너(위 12 + 높이 150*배율) 아래에 붙는다.
-local function applyScale(s)
-	frameScale.Scale = s
-	frame.Position = UDim2.new(0.5, 0, 0, math.floor(12 + 150 * s + 8 + 0.5))
+-- 직업을 고르기 전에는 배너(위 12 + 높이 150*배율) 아래에 붙는다.
+-- 직업을 고른 뒤에는 로비 동안 화면 가운데에 크게 둔다
+-- (직업 선택 창은 고른 뒤 닫히므로 겹치지 않는다).
+local currentScale = 1
+local hasClass = player:GetAttribute("Class") ~= nil
+local function applyLayout()
+	if hasClass then
+		frame.AnchorPoint = Vector2.new(0.5, 0.5)
+		frame.Position = UDim2.new(0.5, 0, 0.5, 0)
+	else
+		frame.AnchorPoint = Vector2.new(0.5, 0)
+		frame.Position = UDim2.new(0.5, 0, 0, math.floor(12 + 150 * currentScale + 8 + 0.5))
+	end
 end
-UiScale.watch(applyScale)
+UiScale.watch(function(s)
+	currentScale = s
+	frameScale.Scale = s
+	applyLayout()
+end)
+player:GetAttributeChangedSignal("Class"):Connect(function()
+	hasClass = player:GetAttribute("Class") ~= nil
+	applyLayout()
+end)
 
 local layout = Instance.new("UIListLayout")
 layout.Padding = UDim.new(0, 4)

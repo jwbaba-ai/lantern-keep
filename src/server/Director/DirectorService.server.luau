@@ -322,15 +322,39 @@ end
 -- 플레이어의 직업은 판이 바뀌어도 유지하고, 다시 고르지 않는다.
 -- day: 이번 판의 Day 번호. 웨이브 수는 DayRules.waveCount(day)로 정한다.
 local function runMatch(matchNumber, day)
-	-- 로비: 1명 이상 들어오고 모두 직업을 고를 때까지 기다린다.
+	-- 로비: 1명 이상 들어오고 모두 직업을 고르고 투표할 때까지 기다린다.
 	-- 최대 MatchStartWaitSeconds까지만 기다리고, 그래도 0명이면 자동 테스트로 진행한다.
+	-- 제한 시간은 첫 플레이어가 캐릭터를 받은 시점부터 잰다
+	-- (접속 로딩 중에 로비가 끝나지 않게). 0명이면 판 시작부터 잰다.
+	-- 이전 판에 낸 표는 다음 로비에 그대로 남아서 투표로 인정한다.
+	local function votedSet()
+		local voted = {}
+		local supportState = ReplicatedStorage:FindFirstChild("SupportState")
+		if supportState then
+			local ok, data = pcall(HttpService.JSONDecode, HttpService, supportState.Value)
+			if ok and type(data) == "table" and type(data.votes) == "table" then
+				for _, entry in ipairs(data.votes) do
+					if entry.userId ~= nil then
+						voted[entry.userId] = true
+					elseif entry.name ~= nil then
+						voted[entry.name] = true
+					end
+				end
+			end
+		end
+		return voted
+	end
 	local function lobbyReady()
 		local players = Players:GetPlayers()
 		if #players == 0 then
 			return false
 		end
+		local voted = votedSet()
 		for _, player in ipairs(players) do
 			if player:GetAttribute("Class") == nil then
+				return false
+			end
+			if not voted[player.UserId] and not voted[player.DisplayName] then
 				return false
 			end
 		end
@@ -341,19 +365,35 @@ local function runMatch(matchNumber, day)
 	local dayHealthMult = DayRules.scale(day).health
 	ReplicatedStorage:SetAttribute("Day", day)
 	local lobbyEndsAt = Workspace:GetServerTimeNow() + (Config.MatchStartWaitSeconds or 20)
-	DirectorState.publish(state, {
-		phase = "lobby",
-		displayWave = 1,
-		source = "pending",
-		plan = nil,
-		waveName = "곧 시작합니다",
-		directorNote = "",
-		intermissionEndsAt = lobbyEndsAt,
-		day = day,
-		totalWaves = totalWaves,
-		boss = false,
-	})
+	local function publishLobby()
+		DirectorState.publish(state, {
+			phase = "lobby",
+			displayWave = 1,
+			source = "pending",
+			plan = nil,
+			waveName = "곧 시작합니다",
+			directorNote = "",
+			intermissionEndsAt = lobbyEndsAt,
+			day = day,
+			totalWaves = totalWaves,
+			boss = false,
+		})
+	end
+	publishLobby()
+	-- 첫 캐릭터를 받은 시점에 제한 시간을 다시 잰다. 아직 캐릭터가 없으면
+	-- 판 시작 기준 시각을 그대로 쓴다 (0명 자동 테스트).
+	local firstCharSeen = false
 	while not lobbyReady() and Workspace:GetServerTimeNow() < lobbyEndsAt and not fastMatchRequested() do
+		if not firstCharSeen then
+			for _, player in ipairs(Players:GetPlayers()) do
+				if player.Character ~= nil then
+					firstCharSeen = true
+					lobbyEndsAt = Workspace:GetServerTimeNow() + (Config.MatchStartWaitSeconds or 20)
+					publishLobby()
+					break
+				end
+			end
+		end
 		task.wait(0.5)
 	end
 

@@ -744,7 +744,13 @@ function SupportSquad.finalizeLobby()
 	local label = choice ~= "none" and Config.SupportSquads[choice].label or ""
 	local announce
 	if not spawned then
-		announce = "지원대 없이 시작합니다"
+		-- 표가 하나도 없이 시간이 지나 시작하면 문구를 구분한다.
+		-- "없음"에 투표했거나 4인 풀파티면 기존 문구 그대로다.
+		if res.reason == "no_votes" then
+			announce = "지원대 투표 없이 시작합니다"
+		else
+			announce = "지원대 없이 시작합니다"
+		end
 	elseif res.tie then
 		announce = string.format(
 			"동률(%s)이라 무작위로 %s를 골랐습니다",

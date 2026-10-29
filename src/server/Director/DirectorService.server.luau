@@ -349,7 +349,18 @@ local function runMatch(matchNumber, day)
 
 	-- 로비 종료: 지원대 투표를 집계하고 빈자리를 채운다.
 	-- 웨이브 1 파티 계산 전에 동기로 끝낸다.
-	local supportChoice = SupportSquad.finalizeLobby()
+	-- 지원대 생성에 실패해도 경기는 계속한다 (대체: 지원대 없음).
+	local supportChoice = "none"
+	do
+		local ok, choice = pcall(SupportSquad.finalizeLobby)
+		if ok and choice ~= nil then
+			supportChoice = choice
+		else
+			warn("[Support] spawn failed: " .. tostring(choice))
+			pcall(SupportSquad.clearMatch)
+			supportChoice = "none"
+		end
+	end
 
 	-- NPC 기억용 경기 기록. P 슬롯·파티 키·partySize는 로비 종료 시점 명단 하나다.
 	local startIds = {}
@@ -541,7 +552,11 @@ local function runMatch(matchNumber, day)
 	-- 1. 결과 알림 (카운트다운 끝 시각은 저장 뒤에 확정한다).
 	publishResult(day, totalWaves, wavesCompleted, currentSource, result, 0)
 	-- 판 끝: 지원대를 모두 지운다. 다음 로비 투표 결과로 다시 만든다.
-	SupportSquad.clearMatch()
+	-- 실패해도 결과 화면·다음 판으로 계속 간다.
+	local okClear, clearErr = pcall(SupportSquad.clearMatch)
+	if not okClear then
+		warn("[Support] clear failed: " .. tostring(clearErr))
+	end
 	-- 2. 경기 종료 처리(NPC 기억 요약·저장)를 끝까지 기다린다.
 	finishNpcMemory(result, matchRecord, wavesCompleted, startIds)
 	-- 3. 결과 화면을 MatchRestartSeconds초 보여 준다. 저장이 더 오래 걸리면 그만큼 늦게 시작한다.

@@ -237,7 +237,8 @@ local function makeRow(npcKey, order)
 	body.TextSize = BODY_TEXT_SIZE
 	body.TextWrapped = true
 	body.TextXAlignment = Enum.TextXAlignment.Left
-	body.TextYAlignment = Enum.VerticalAlignment.Top
+	body.TextYAlignment = Enum.TextYAlignment.Top
+	body.TextTruncate = Enum.TextTruncate.AtEnd
 	body.ClipsDescendants = true
 	body.Text = ""
 	body.LayoutOrder = 2
@@ -248,10 +249,10 @@ local function makeRow(npcKey, order)
 
 	local ai = Instance.new("TextLabel")
 	ai.Name = "AINotice"
-	ai.Size = UDim2.new(1, 0, 0, 16)
+	ai.Size = UDim2.new(1, 0, 0, 18)
 	ai.BackgroundTransparency = 1
 	ai.Font = Enum.Font.Gotham
-	ai.TextSize = 14
+	ai.TextSize = 16
 	ai.TextXAlignment = Enum.TextXAlignment.Left
 	ai.TextColor3 = Color3.fromRGB(200, 200, 200)
 	ai.Text = "AI가 생성한 대사입니다"

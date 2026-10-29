@@ -869,6 +869,11 @@ function SupportSquad.clearMatch()
 	lastReport = bots
 	bots = {}
 	currentChoice = "none"
+	-- 판이 끝나면 디버그 스냅샷도 비운다.
+	-- 지원대가 없는 다음 판에 이전 판 기록이 나오지 않게 한다.
+	pcall(function()
+		getDebugValue().Value = HttpService:JSONEncode({ choice = "none", bots = {} })
+	end)
 	local folder = Workspace:FindFirstChild("Support")
 	if folder then
 		for _, child in ipairs(folder:GetChildren()) do

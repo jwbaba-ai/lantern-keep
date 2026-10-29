@@ -229,7 +229,7 @@ local function buildModel(bot, choice, map, spawnAt)
 	end
 	bot.Character = nil
 	local model = Players:CreateHumanoidModelFromDescription(
-		HumanoidDescription.new(),
+		Instance.new("HumanoidDescription"),
 		Enum.HumanoidRigType.R15
 	)
 	model.Name = bot.Name

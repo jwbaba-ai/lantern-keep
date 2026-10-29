@@ -6,6 +6,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 
+local MapDecor = require(script.Parent:WaitForChild("MapDecor"))
+
 local GATE_DISTANCE = 60 -- 등불에서 성문까지
 local SPAWN_DISTANCE = 210 -- 등불에서 스폰 지점까지 (성문 바깥 150)
 local GATE_COLORS = {
@@ -161,6 +163,13 @@ if gatesFolder then
 			addGateLabel(gate, lane)
 		end
 	end
+end
+-- 장식은 pcall로: 실패해도 Ready는 켜고 경기는 진행한다.
+local ok, decorParts, decorLights, decorParticles = pcall(MapDecor.build, map)
+if ok then
+	print(string.format("[Map] decor parts=%d lights=%d particles=%d", decorParts, decorLights, decorParticles))
+else
+	warn("[Map] decor failed: " .. tostring(decorParts))
 end
 map:SetAttribute("Ready", true)
 print("[Map] ready: lantern=" .. Config.LanternMaxHealth .. " gates=4 spawns=4 lanes=4")

@@ -29,9 +29,43 @@ frame.Parent = gui
 -- 휴대폰 배율: 화면이 바뀌면(회전) 다시 맞춘다.
 local frameScale = Instance.new("UIScale")
 frameScale.Parent = frame
+local layoutBar = nil
 UiScale.watch(function(s)
 	frameScale.Scale = s
+	if layoutBar then
+		layoutBar()
+	end
 end)
+
+-- 큰 배너와 가로로 겹치면, 화면이 좁을 때만 체력바를 배너 아래로 내린다.
+-- 위치는 오른쪽 정렬, y = 배너 아래 끝 + 8이다.
+-- 배너가 접힌 한 줄일 때와 결과 화면일 때는 원래 자리(오른쪽 위)로 되돌린다.
+-- 겹침 판정은 체력바의 원래 자리 사각형으로 해서, 내린 뒤에도 떨지 않게 한다.
+-- 화면 크기가 바뀌면(가로·세로 전환) 다시 계산한다.
+function layoutBar()
+	local s = UiScale.factor()
+	local camera = Workspace.CurrentCamera
+	local vw = 1024
+	if camera then
+		vw = camera.ViewportSize.X
+	end
+	local barW = frame.Size.X.Offset * s
+	local barH = frame.Size.Y.Offset * s
+	local defaultX = vw - 12 - barW
+	local playerGui = gui.Parent
+	local bannerGui = playerGui and playerGui:FindFirstChild("WaveBanner")
+	local banner = bannerGui and bannerGui:FindFirstChild("Banner")
+	if banner and banner.Visible then
+		local bp, bs = banner.AbsolutePosition, banner.AbsoluteSize
+		local overlapX = defaultX < bp.X + bs.X and bp.X < defaultX + barW
+		local overlapY = 12 < bp.Y + bs.Y and bp.Y < 12 + barH
+		if overlapX and overlapY then
+			frame.Position = UDim2.new(1, -12, 0, math.floor((bp.Y + bs.Y + 8) / s + 0.5))
+			return
+		end
+	end
+	frame.Position = UDim2.new(1, -12, 0, 12)
+end
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 18)
@@ -72,6 +106,7 @@ end
 
 lantern:GetAttributeChangedSignal("Health"):Connect(render)
 render()
+layoutBar()
 
 -- 30% 이하에서 붉게 깜빡인다.
 task.spawn(function()
@@ -81,5 +116,7 @@ task.spawn(function()
 			fill.Visible = not fill.Visible
 			fill.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
 		end
+		-- 배너가 뜨거나 접히면 따라간다.
+		layoutBar()
 	end
 end)

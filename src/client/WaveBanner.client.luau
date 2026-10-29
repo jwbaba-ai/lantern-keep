@@ -256,13 +256,26 @@ end
 -- 컨테이너 크기는 화면 배율에 맞추고, 글자는 안쪽 UIScale로 맞춘다.
 -- iPhone 가로(844x390, 배율 0.55)면 높이가 약 83으로 화면의 35% 안에 든다.
 local BASE_W, BASE_H = 520, 150
+-- 큰 배너 너비 상한(배율 적용 전 기준): 휴대폰 세로 화면에서 등불 체력바와
+-- 겹치지 않게 min(520, 화면 너비 - 24)로 둔다.
+local function baseBannerWidth()
+	local camera = Workspace.CurrentCamera
+	local vw = 1024
+	if camera then
+		vw = camera.ViewportSize.X
+	end
+	return math.min(BASE_W, vw - 24)
+end
 local BASE_BADGE = 40
 local currentScale = 1
 local function applyBannerScale(s)
+	local baseW = baseBannerWidth()
 	frame.Size = UDim2.fromOffset(
-		math.floor(BASE_W * s + 0.5),
+		math.floor(baseW * s + 0.5),
 		math.floor(BASE_H * s + 0.5)
 	)
+	-- 글자 프레임도 같은 너비로 맞춘다(안쪽 배율로 컨테이너와 같은 크기가 된다).
+	textFrame.Size = UDim2.fromOffset(baseW, BASE_H)
 	textUiScale.Scale = s
 	-- 디렉터 표식도 같은 배율을 받는다.
 	directorBadge.Size = UDim2.fromOffset(

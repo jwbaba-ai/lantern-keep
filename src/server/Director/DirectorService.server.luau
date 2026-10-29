@@ -58,6 +58,16 @@ local function lanternHealthPct(lantern)
 	return math.floor(lanternHealth(lantern) / Config.LanternMaxHealth * 100 + 0.5)
 end
 
+-- 웨이브 완료 수 계산 (순수 함수).
+-- 등불이 꺼졌으면 패배한 웨이브를 세지 않고 이전 값을 유지한다.
+-- 승리·시간 초과·debugFastMatch(등불 > 0)는 그 웨이브를 완료로 센다.
+local function completedAfterWave(completed, wave, lanternHp)
+	if lanternHp <= 0 then
+		return completed
+	end
+	return wave
+end
+
 local function logPlan(wave, source, plan)
 	print(string.format(
 		"[Director] wave=%d source=%s tactic=%s event=%s note=%s",
@@ -417,7 +427,8 @@ local function runMatch(matchNumber, day)
 		})
 
 		local tracker = playWave(map, lantern, wave, playPlan, dayHealthMult, bossLane)
-		wavesCompleted = wave
+		-- 패배한 웨이브는 완료로 세지 않는다 (결과 화면·NPC 기억이 함께 고쳐진다).
+		wavesCompleted = completedAfterWave(wavesCompleted, wave, lanternHealth(lantern))
 
 		if lanternHealth(lantern) <= 0 then
 			break

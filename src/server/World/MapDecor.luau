@@ -47,10 +47,10 @@ local function makePart(props)
 	return p
 end
 
--- 원기둥 파트 (CylinderMesh는 파트 bounds에 내접한다. 정사각형에만 쓴다).
+-- 원기둥 파트. Size = (지름, 높이, 지름). CylinderMesh 세로 축은 Y.
 local function makeCylinder(props, diameter, height)
 	local p = makePart(props)
-	p.Size = Vector3.new(height, diameter, diameter)
+	p.Size = Vector3.new(diameter, height, diameter)
 	local mesh = Instance.new("CylinderMesh")
 	mesh.Parent = p
 	return p

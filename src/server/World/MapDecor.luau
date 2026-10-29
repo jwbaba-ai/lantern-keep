@@ -378,6 +378,9 @@ function MapDecor.build(map)
 	buildGateFrames(decor, gates)
 	buildRoads(decor)
 	buildOutside(decor)
+	buildLantern(decor, map:FindFirstChild("Lantern"))
+	applyLighting()
+	buildTorches(decor)
 	return countDecor(decor)
 end
 

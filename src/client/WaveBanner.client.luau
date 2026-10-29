@@ -1,6 +1,7 @@
 -- 웨이브 배너 (단일 기준: docs/tasks/day4.md 2단계).
 -- 화면 위 가운데에 ReplicatedStorage.DirectorState(JSON)를 보여 준다.
 -- 서버가 필터한 글자(display_name·display_note)만 쓰고, 원문은 받지 않는다.
+local GuiService = game:GetService("GuiService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -121,6 +122,50 @@ directorBadge.Parent = frame
 local scale = Instance.new("UIScale")
 scale.Parent = frame
 
+-- 접힌 한 줄 (웨이브 중 6초 뒤): 왼쪽 위 Roblox 메뉴 버튼 아래에 둔다.
+-- 등불 체력바(LanternBar)는 오른쪽 위에 있어서 겹치지 않는다.
+-- 이벤트 그림과 디렉터 표식은 큰 배너 안에만 있어 접히면 함께 숨는다.
+local miniFrame = Instance.new("Frame")
+miniFrame.Name = "Mini"
+miniFrame.AnchorPoint = Vector2.new(0, 0)
+miniFrame.Size = UDim2.new(0, 360, 0, 28)
+miniFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+miniFrame.BackgroundTransparency = 0.3
+miniFrame.BorderSizePixel = 0
+miniFrame.Visible = false
+miniFrame.Parent = gui
+
+local miniScale = Instance.new("UIScale")
+miniScale.Parent = miniFrame
+
+local miniLabel = Instance.new("TextLabel")
+miniLabel.Name = "MiniLine"
+miniLabel.Size = UDim2.new(1, -12, 1, 0)
+miniLabel.Position = UDim2.new(0, 6, 0, 0)
+miniLabel.BackgroundTransparency = 1
+miniLabel.TextScaled = true
+miniLabel.TextXAlignment = Enum.TextXAlignment.Left
+miniLabel.TextColor3 = Color3.new(1, 1, 1)
+miniLabel.Text = ""
+miniLabel.Parent = miniFrame
+local miniCap = Instance.new("UITextSizeConstraint")
+miniCap.MaxTextSize = 16
+miniCap.Parent = miniLabel
+
+-- 왼쪽 위 메뉴 버튼 아래. ScreenGui 기본(IgnoreGuiInset=false) 원점이
+-- 이미 메뉴 버튼 아래라, 가로 노치 여유(GetGuiInset X)만 더한다.
+local function applyMiniPosition()
+	local insetX = 0
+	local ok, inset = pcall(function()
+		return GuiService:GetGuiInset()
+	end)
+	if ok and typeof(inset) == "Vector2" then
+		insetX = inset.X
+	end
+	miniFrame.Position = UDim2.new(0, insetX + 12, 0, 12)
+end
+applyMiniPosition()
+
 -- 휴대폰 배율: 트윈용 UIScale과 겹치지 않게 글자 프레임에 따로 둔다.
 local textUiScale = Instance.new("UIScale")
 textUiScale.Parent = textFrame
@@ -228,6 +273,9 @@ local function applyBannerScale(s)
 	-- 보스 초상화 행도 같은 배율을 받는다.
 	currentScale = s
 	applyBossRowSize(s)
+	-- 접힌 줄(높이 약 28)도 같은 배율을 받는다.
+	miniScale.Scale = s
+	applyMiniPosition()
 end
 UiScale.watch(applyBannerScale)
 
@@ -284,6 +332,56 @@ local function laneSummary(lanes, laneOrder)
 		table.insert(parts, string.format("%s %d", LANE_KO[row.lane], row.count))
 	end
 	return table.concat(parts, " · ")
+end
+
+-- 접힌 줄용 성문 이름 나열 (출발 순서, 시간·적 수 없음).
+-- 예: "북문 → 동문 → 서문".
+local function laneNamesShort(data)
+	if type(data.lane_order) == "table" and #data.lane_order > 0 then
+		local parts = {}
+		for _, slot in ipairs(data.lane_order) do
+			local name = LANE_KO[slot.lane]
+			if name then
+				table.insert(parts, name)
+			end
+		end
+		return table.concat(parts, " → ")
+	end
+	local order = {}
+	for lane, count in pairs(data.lanes or {}) do
+		if count > 0 and LANE_KO[lane] then
+			table.insert(order, lane)
+		end
+	end
+	table.sort(order, function(a, b)
+		local ca, cb = (data.lanes or {})[a] or 0, (data.lanes or {})[b] or 0
+		if ca ~= cb then
+			return ca > cb
+		end
+		return (LANE_ORDER[a] or 99) < (LANE_ORDER[b] or 99)
+	end)
+	local parts = {}
+	for _, lane in ipairs(order) do
+		table.insert(parts, LANE_KO[lane])
+	end
+	return table.concat(parts, " → ")
+end
+
+-- 접힌 줄 내용: "Day 2 · 웨이브 3/5 · 북문 → 동문 → 서문".
+-- 보스 웨이브면 앞에 "[보스]"를 붙인다.
+local function miniText(data)
+	local prefix = ""
+	if data.boss == true then
+		prefix = "[보스] "
+	end
+	return string.format(
+		"%sDay %d · 웨이브 %d/%d · %s",
+		prefix,
+		data.day or 1,
+		data.display_wave or 0,
+		data.total_waves or 0,
+		laneNamesShort(data)
+	)
 end
 
 -- 계획에서 보스(Warlord)가 나오는 성문의 한글 이름. 없으면 nil.
@@ -413,6 +511,11 @@ local function refreshCountdown()
 	end
 end
 
+-- 접기 상태. 웨이브 시작 6초 뒤 true가 된다.
+-- 웨이브 중 상태가 바뀌어도 다시 펼치지 않고 접힌 줄 내용만 갱신한다.
+local collapsed = false
+local collapseToken = 0
+
 local state = ReplicatedStorage:WaitForChild("DirectorState")
 local function onChanged()
 	local ok, data = pcall(HttpService.JSONDecode, HttpService, state.Value)
@@ -423,13 +526,42 @@ local function onChanged()
 	if data.phase ~= lastPhase or (lastSource == "pending" and data.source ~= "pending") then
 		pop()
 	end
+	local waveStarted = data.phase == "wave" and lastPhase ~= "wave"
 	lastPhase = data.phase
 	lastSource = data.source
 	lastData = data
-	render()
-	-- 결과 화면이 맡는 동안은 배너 전체를 숨긴다.
-	-- 그림·글자·표식이 모두 컨테이너 안에 있어 하나만 끄면 된다.
-	frame.Visible = data.phase ~= "result"
+	if data.phase == "wave" then
+		if waveStarted then
+			-- 웨이브 시작: 크게 보여 주고 6초 뒤에 한 줄로 접는다.
+			collapseToken += 1
+			local token = collapseToken
+			collapsed = false
+			miniFrame.Visible = false
+			render()
+			frame.Visible = true
+			task.delay(6, function()
+				if token == collapseToken and lastData and lastData.phase == "wave" then
+					collapsed = true
+					frame.Visible = false
+					miniLabel.Text = miniText(lastData)
+					miniFrame.Visible = true
+				end
+			end)
+		else
+			-- 웨이브 중 상태 변경(예: 보스 등장): 다시 펼치지 않는다.
+			render()
+			if collapsed then
+				miniLabel.Text = miniText(data)
+			end
+		end
+	else
+		-- 로비·대기·결과: 다시 펼친다 (결과 화면이 맡는 동안은 숨긴다).
+		collapseToken += 1
+		collapsed = false
+		miniFrame.Visible = false
+		render()
+		frame.Visible = data.phase ~= "result"
+	end
 	refreshCountdown()
 end
 state.Changed:Connect(onChanged)

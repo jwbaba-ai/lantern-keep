@@ -93,6 +93,7 @@ function MatchStats.buildSummary(tracker, waveNumber, lanternHealthPct, previous
 	end
 
 	local seen = {}
+	local indexByUser = {}
 	local players = {}
 	local function addPlayer(userId, role, support)
 		if seen[userId] or role == nil then
@@ -108,13 +109,23 @@ function MatchStats.buildSummary(tracker, waveNumber, lanternHealthPct, previous
 			entry.support = true
 		end
 		table.insert(players, entry)
+		indexByUser[userId] = #players
 	end
 	for userId, role in pairs(tracker.roles) do
 		addPlayer(userId, role, false)
 	end
 	if roster then
 		for _, entry in ipairs(roster) do
-			addPlayer(entry.userId, entry.role, entry.support)
+			-- 피해를 먼저 준 지원대는 tracker.roles에 support 없이 들어가 있다.
+			-- roster가 support=true이면 이미 들어간 항목에 표시를 붙인다.
+			if seen[entry.userId] and entry.support then
+				local idx = indexByUser[entry.userId]
+				if idx then
+					players[idx].support = true
+				end
+			else
+				addPlayer(entry.userId, entry.role, entry.support)
+			end
 		end
 	end
 	table.sort(players, function(a, b)

@@ -63,4 +63,27 @@ do
 	)
 end
 
+-- 5. 피해를 준 지원대(UserId 음수)는 tracker에 먼저 들어가도
+-- roster의 support=true가 요약 players 항목에 남는다.
+do
+	local MatchStats = require(
+		SupportFolder.Parent:WaitForChild("Director"):WaitForChild("MatchStats")
+	)
+	local tracker = MatchStats.new()
+	MatchStats.recordDamage(tracker, { UserId = -1, role = "guardian" }, 50)
+	local summary = MatchStats.buildSummary(tracker, 1, 100, {
+		tactic = "focus_weak_lane",
+		event = "none",
+	}, {
+		{ userId = -1, role = "guardian", support = true },
+	}, 1, 3, "coop")
+	local found = nil
+	for _, entry in ipairs(summary.players) do
+		if entry.role == "guardian" and entry.damage == 50 then
+			found = entry
+		end
+	end
+	check("support_flag_kept_for_damager", found ~= nil and found.support == true)
+end
+
 return results

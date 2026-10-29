@@ -309,7 +309,7 @@ local function applyLighting()
 	Lighting.ClockTime = 19.5 -- 해 질 녘
 	Lighting.Brightness = 1.5
 	Lighting.Ambient = Color3.fromRGB(40, 45, 70) -- 어두운 남색
-	Lighting.OutdoorAmbient = Color3.fromRGB(40, 45, 70)
+	Lighting.OutdoorAmbient = Color3.fromRGB(70, 75, 105)
 	local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
 	if not atmo then
 		atmo = Instance.new("Atmosphere")

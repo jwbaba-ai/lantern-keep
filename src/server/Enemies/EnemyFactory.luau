@@ -100,6 +100,8 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved, mod
 	label.BackgroundTransparency = 1
 	label.TextScaled = true
 	label.TextColor3 = Color3.new(1, 1, 1)
+	label.TextStrokeTransparency = 0
+	label.TextStrokeColor3 = Color3.new(0, 0, 0)
 	label.Text = ((mods and mods.namePrefix) or "") .. (spec.DisplayName or enemyType)
 	label.Parent = gui
 	gui.Parent = body

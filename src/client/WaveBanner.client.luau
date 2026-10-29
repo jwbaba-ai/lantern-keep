@@ -33,10 +33,13 @@ local LANE_KO = { north = "북문", south = "남문", east = "동문", west = "�
 
 local TACTIC_KO = {
 	focus_weak_lane = "약한 성문 집중",
-	split_push = "전 성문 동시 공격",
+	split_push = "전 성문 시간차 공격",
 	flank = "측면 우회",
 	siege = "공성",
 }
+
+-- Config.Lanes 순서 (동점 정렬용).
+local LANE_ORDER = { north = 1, south = 2, east = 3, west = 4 }
 
 local EVENT_KO = {
 	fog = "안개",
@@ -241,8 +244,29 @@ local function pop()
 	end)
 end
 
--- 성문 요약: 적 수가 많은 순, 0인 성문은 숨김. 예: "북문 6 · 동문 4".
-local function laneSummary(lanes)
+-- 성문 요약: 출발 순서대로 시간을 붙인다.
+-- 예: "북문 6 → 동문 4 (+8초) → 서문 3 (+16초)".
+-- laneOrder는 서버가 보낸 lane_order(출발 순서 배열)다.
+local function laneSummary(lanes, laneOrder)
+	if type(laneOrder) == "table" and #laneOrder > 0 then
+		local parts = {}
+		for i, slot in ipairs(laneOrder) do
+			local name = LANE_KO[slot.lane]
+			if name and (slot.count or 0) > 0 then
+				if i == 1 then
+					table.insert(parts, string.format("%s %d", name, slot.count))
+				else
+					table.insert(parts, string.format(
+						"%s %d (+%d초)",
+						name,
+						slot.count,
+						slot.start_at or 0
+					))
+				end
+			end
+		end
+		return table.concat(parts, " → ")
+	end
 	local rows = {}
 	for lane, count in pairs(lanes) do
 		if count > 0 and LANE_KO[lane] then
@@ -250,7 +274,10 @@ local function laneSummary(lanes)
 		end
 	end
 	table.sort(rows, function(a, b)
-		return a.count > b.count
+		if a.count ~= b.count then
+			return a.count > b.count
+		end
+		return (LANE_ORDER[a.lane] or 99) < (LANE_ORDER[b.lane] or 99)
 	end)
 	local parts = {}
 	for _, row in ipairs(rows) do
@@ -311,7 +338,7 @@ local function render()
 	noteLine.Text = note
 	-- 셋째 줄: 공격 성문 요약 + 전술 한글 이름.
 	-- 보스 웨이브면 앞에 "[보스] 그림자 군주 · 북문"을 붙인다(고정 문구).
-	local lanes = laneSummary(data.lanes or {})
+	local lanes = laneSummary(data.lanes or {}, data.lane_order)
 	local tacticKo = data.plan and TACTIC_KO[data.plan.tactic]
 	local bossKo = bossLaneKo(data.plan)
 	local bossPrefix = nil

@@ -157,6 +157,11 @@ end
 -- 웨이브 하나를 끝까지 진행하고 통계를 돌려준다.
 -- dayHealthMult: Day 체력 배율 (EnemyFactory.spawn에 인자로 넘긴다).
 -- bossLane: 보스 웨이브의 보스 성문. 보스는 웨이브 시작 10초 뒤에 나온다.
+-- 성문별 시간 차 (day9): 계획의 적을 성문별 묶음으로 나누고,
+-- 적이 많은 성문부터 (i-1) x 간격초 뒤에 출발한다.
+-- 묶음은 task.spawn으로 동시에 돌리고, 모든 묶음이 끝난 뒤 종료 판정을 시작한다.
+-- 성문 안에서는 기존 SPAWN_INTERVAL 간격으로 한 마리씩 나온다
+-- (reinforcement_delay 효과 포함). 등불 파괴·debugFastMatch 중단은 그대로다.
 local function playWave(map, lantern, wave, plan, dayHealthMult, bossLane)
 	local tracker = MatchStats.new()
 	CombatService.beginWave(tracker)
@@ -178,33 +183,56 @@ local function playWave(map, lantern, wave, plan, dayHealthMult, bossLane)
 		MatchStats.recordResolved(tracker, lane, how)
 	end
 
+	-- 웨이브가 끝나면(정리·다음 웨이브) 늦은 성문 스폰이 새지 않게 한다.
+	local cancelled = false
+	-- 성문별 적 묶음 (보스 제외, 계획 순서 유지).
+	local order = DirectorState.laneStartTimes(
+		plan,
+		Config.LaneStaggerSeconds or 8,
+		Config.SplitPushStaggerSeconds or 3
+	)
+	local groups = {}
 	for _, entry in ipairs(plan.enemies) do
 		-- 보스는 아래 delayed 스폰으로 따로 나온다 (10초 뒤).
-		if entry.type == "Warlord" then
-			continue
-		end
-		for _ = 1, entry.count do
-			if lanternHealth(lantern) <= 0 or fastMatchRequested() then
-				break
+		if entry.type ~= "Warlord" then
+			groups[entry.lane] = groups[entry.lane] or {}
+			for _ = 1, entry.count do
+				table.insert(groups[entry.lane], entry.type)
 			end
-			local body = EnemyFactory.spawn(
-				entry.type,
-				entry.lane,
-				waypointsByLane[entry.lane],
-				lantern,
-				onResolved,
-				EventEffects.nextSpawnMods(waveMods),
-				dayHealthMult
-			)
-			if body then
-				MatchStats.recordSpawn(tracker, entry.lane)
-				table.insert(bodies, body)
+		end
+	end
+	local remaining = #order
+	for _, slot in ipairs(order) do
+		task.spawn(function()
+			local ok, err = pcall(function()
+				if slot.start_at > 0 then
+					task.wait(slot.start_at)
+				end
+				for _, enemyType in ipairs(groups[slot.lane] or {}) do
+					if cancelled or lanternHealth(lantern) <= 0 or fastMatchRequested() then
+						break
+					end
+					local body = EnemyFactory.spawn(
+						enemyType,
+						slot.lane,
+						waypointsByLane[slot.lane],
+						lantern,
+						onResolved,
+						EventEffects.nextSpawnMods(waveMods),
+						dayHealthMult
+					)
+					if body then
+						MatchStats.recordSpawn(tracker, slot.lane)
+						table.insert(bodies, body)
+					end
+					task.wait(spawnInterval)
+				end
+			end)
+			if not ok then
+				warn("[Director] wave=" .. wave .. " lane=" .. slot.lane .. " spawn failed: " .. tostring(err))
 			end
-			task.wait(spawnInterval)
-		end
-		if lanternHealth(lantern) <= 0 or fastMatchRequested() then
-			break
-		end
+			remaining -= 1
+		end)
 	end
 
 	-- 보스는 웨이브 시작 10초 뒤에 나온다.
@@ -213,7 +241,7 @@ local function playWave(map, lantern, wave, plan, dayHealthMult, bossLane)
 	-- 자동 테스트(플레이어 0명)의 체력 비례 처치도 보스에 그대로 적용된다.
 	if bossLane ~= nil then
 		task.delay(10, function()
-			if lanternHealth(lantern) <= 0 or fastMatchRequested() then
+			if cancelled or lanternHealth(lantern) <= 0 or fastMatchRequested() then
 				-- 보스가 나오지 못하면 예약 자리를 정리한다.
 				MatchStats.recordResolved(tracker, bossLane, "killed")
 				return
@@ -235,6 +263,17 @@ local function playWave(map, lantern, wave, plan, dayHealthMult, bossLane)
 		end)
 	end
 
+	-- 모든 성문 묶음이 끝날 때까지 기다린 뒤 종료 판정을 시작한다.
+	-- 아직 나오지 않은 적은 기다리므로 spawned 예약 없이도 규칙이 유지된다.
+	-- 등불 파괴·debugFastMatch면 묶음이 끝나기 전에도 빠져나간다.
+	local waitedGroups = 0
+	while remaining > 0 and waitedGroups < WAVE_TIMEOUT do
+		if lanternHealth(lantern) <= 0 or fastMatchRequested() then
+			break
+		end
+		task.wait(0.5)
+		waitedGroups += 0.5
+	end
 	local waited = 0
 	while tracker.arrived + tracker.killed < tracker.spawned and waited < WAVE_TIMEOUT do
 		if lanternHealth(lantern) <= 0 or fastMatchRequested() then
@@ -243,6 +282,8 @@ local function playWave(map, lantern, wave, plan, dayHealthMult, bossLane)
 		task.wait(0.5)
 		waited += 0.5
 	end
+	-- 늦은 성문 스폰이 정리 뒤에 새지 않게 막는다.
+	cancelled = true
 	if tracker.arrived + tracker.killed < tracker.spawned then
 		if lanternHealth(lantern) <= 0 then
 			print("[Director] wave=" .. wave .. " lantern destroyed: 남은 적 정리")
@@ -559,7 +600,17 @@ local function runMatch(matchNumber, day)
 			boss = DayRules.isBossWave(day, wave + 1),
 		})
 		-- 다음 웨이브가 정해지면 대기 시간 동안 공격 성문을 깜빡인다.
-		GateHighlight.start(map, DirectorState.lanesOf(previewPlan))
+		-- 출발 순서가 보이게 첫 성문을 가장 밝게 한다.
+		local previewOrder = DirectorState.laneStartTimes(
+			previewPlan,
+			Config.LaneStaggerSeconds or 8,
+			Config.SplitPushStaggerSeconds or 3
+		)
+		GateHighlight.start(
+			map,
+			DirectorState.lanesOf(previewPlan),
+			previewOrder[1] and previewOrder[1].lane or nil
+		)
 		local restLeft = rest
 		while restLeft > 0 do
 			if fastMatchRequested() then

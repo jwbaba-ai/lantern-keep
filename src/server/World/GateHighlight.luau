@@ -14,15 +14,20 @@ local function setGateTransparency(map, lane, value)
 	end
 end
 
-local function blinkLoop(map, lane, count, token)
+local function blinkLoop(map, lane, count, token, isFirst)
+	-- 첫 출발 성문은 더 빠르고 밝게 깜빡여 순서가 보이게 한다.
 	local interval = math.clamp(1.0 - 0.08 * count, 0.25, 1.0)
+	if isFirst then
+		interval = math.max(0.25, interval * 0.7)
+	end
+	local onTransparency = isFirst and 0.5 or 0.7
 	local gates = map:FindFirstChild("Gates")
 	local gate = gates and gates:FindFirstChild(lane)
 	while token == generation do
 		if gate == nil or gate.Parent == nil then
 			return
 		end
-		gate.Transparency = 0.7
+		gate.Transparency = onTransparency
 		task.wait(interval)
 		if token ~= generation then
 			break
@@ -36,12 +41,14 @@ local function blinkLoop(map, lane, count, token)
 end
 
 -- 대기 시작: lanes(성문별 적 수)에 따라 깜빡임을 시작한다.
-function GateHighlight.start(map, lanes)
+-- firstLane(첫 출발 성문)이 있으면 그 성문을 가장 밝게 깜빡인다.
+-- 없으면 기존처럼 적 수에 따라서만 깜빡인다.
+function GateHighlight.start(map, lanes, firstLane)
 	GateHighlight.stop(map)
 	local token = generation
 	for lane, count in pairs(lanes) do
 		if count > 0 then
-			task.spawn(blinkLoop, map, lane, count, token)
+			task.spawn(blinkLoop, map, lane, count, token, lane == firstLane)
 		end
 	end
 end

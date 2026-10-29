@@ -21,6 +21,9 @@ return {
 	DayCountMax = 1.6, -- 적 수 배율 상한
 	IntermissionSeconds = 20,
 	MatchStartWaitSeconds = 20, -- 웨이브 1 전 로비 대기 상한(초). 지나도 0명이면 자동 테스트로 진행
+	-- 성문별 출발 시간 차 (day9): i번째 성문은 (i-1) x 간격초 뒤에 출발한다.
+	LaneStaggerSeconds = 8, -- 일반 전술의 성문 사이 출발 간격(초)
+	SplitPushStaggerSeconds = 3, -- split_push 전술의 성문 사이 출발 간격(초)
 	MatchRestartSeconds = 15, -- 결과 화면을 보여 주는 시간(초). 기억 저장이 더 오래 걸리면 그만큼 더 기다린다
 	LanternMaxHealth = 100,
 	MinEnemies = 4,

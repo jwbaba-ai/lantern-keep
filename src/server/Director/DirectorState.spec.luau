@@ -225,4 +225,81 @@ do
 	)
 end
 
+-- 9. 성문 출발 순서: 적 수 6/4/3 → 출발 0/8/16초 (적 많은 순, 간격 8초).
+do
+	local plan = {
+		wave_name = "Staggered",
+		enemies = {
+			{ type = "Grunt", count = 3, lane = "west" },
+			{ type = "Grunt", count = 6, lane = "north" },
+			{ type = "Runner", count = 4, lane = "east" },
+		},
+		tactic = "focus_weak_lane",
+		event = "none",
+		director_note = "stagger",
+	}
+	local order = DirectorState.laneStartTimes(plan, 8, 3)
+	check(
+		"lane_start_times_ordered",
+		#order == 3
+			and order[1].lane == "north"
+			and order[1].count == 6
+			and order[1].start_at == 0
+			and order[2].lane == "east"
+			and order[2].count == 4
+			and order[2].start_at == 8
+			and order[3].lane == "west"
+			and order[3].count == 3
+			and order[3].start_at == 16
+	)
+end
+
+-- 10. split_push 전술이면 간격 3초 → 출발 0/3/6초.
+do
+	local plan = {
+		wave_name = "Split",
+		enemies = {
+			{ type = "Grunt", count = 3, lane = "west" },
+			{ type = "Grunt", count = 6, lane = "north" },
+			{ type = "Runner", count = 4, lane = "east" },
+		},
+		tactic = "split_push",
+		event = "none",
+		director_note = "split",
+	}
+	local order = DirectorState.laneStartTimes(plan, 8, 3)
+	check(
+		"lane_start_times_split_push",
+		#order == 3
+			and order[1].start_at == 0
+			and order[2].start_at == 3
+			and order[3].start_at == 6
+	)
+end
+
+-- 11. 동점이면 Config.Lanes 순 (north, south, east, west).
+do
+	local plan = {
+		wave_name = "Tied",
+		enemies = {
+			{ type = "Grunt", count = 2, lane = "west" },
+			{ type = "Grunt", count = 2, lane = "east" },
+			{ type = "Grunt", count = 2, lane = "south" },
+			{ type = "Grunt", count = 5, lane = "north" },
+		},
+		tactic = "siege",
+		event = "none",
+		director_note = "tied",
+	}
+	local order = DirectorState.laneStartTimes(plan, 8, 3)
+	check(
+		"lane_start_times_tie_break",
+		#order == 4
+			and order[1].lane == "north"
+			and order[2].lane == "south"
+			and order[3].lane == "east"
+			and order[4].lane == "west"
+	)
+end
+
 return results

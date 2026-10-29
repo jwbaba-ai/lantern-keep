@@ -28,6 +28,38 @@ function DirectorState.lanesOf(plan)
 	return lanes
 end
 
+-- 성문별 출발 순서 (순수 함수, day9 성문별 시간 차).
+-- 성문 순서는 적 수 내림차순, 동점이면 Config.Lanes 순이다.
+-- i번째 성문은 (i-1) x 간격초 뒤에 출발한다.
+-- 간격은 plan.tactic이 split_push면 splitStagger, 아니면 laneStagger다.
+-- 돌려값: { { lane, count, start_at } } 배열 (적 0인 성문 제외).
+function DirectorState.laneStartTimes(plan, laneStagger, splitStagger)
+	local counts = DirectorState.lanesOf(plan)
+	local ordered = {}
+	local laneIndex = {}
+	for i, lane in ipairs(Config.Lanes) do
+		laneIndex[lane] = i
+		if counts[lane] > 0 then
+			table.insert(ordered, lane)
+		end
+	end
+	table.sort(ordered, function(a, b)
+		if counts[a] ~= counts[b] then
+			return counts[a] > counts[b]
+		end
+		return laneIndex[a] < laneIndex[b]
+	end)
+	local gap = laneStagger
+	if type(plan) == "table" and plan.tactic == "split_push" then
+		gap = splitStagger
+	end
+	local out = {}
+	for i, lane in ipairs(ordered) do
+		table.insert(out, { lane = lane, count = counts[lane], start_at = (i - 1) * gap })
+	end
+	return out
+end
+
 -- 필터가 없을 때 쓸 같은 웨이브 번호의 FallbackWaves 글자.
 function DirectorState.fallbackName(waveNumber)
 	local fb = FallbackWaves[waveNumber]
@@ -126,6 +158,12 @@ function DirectorState.buildState(args)
 	if args.plan ~= nil then
 		state.plan = args.plan
 		state.lanes = DirectorState.lanesOf(args.plan)
+		-- 성문별 출발 순서·시각 (배너 셋째 줄·성문 강조가 같은 순서를 쓴다).
+		state.lane_order = DirectorState.laneStartTimes(
+			args.plan,
+			Config.LaneStaggerSeconds or 8,
+			Config.SplitPushStaggerSeconds or 3
+		)
 	end
 	return state
 end

@@ -349,7 +349,7 @@ local function runMatch(matchNumber, day)
 
 	-- 로비 종료: 지원대 투표를 집계하고 빈자리를 채운다.
 	-- 웨이브 1 파티 계산 전에 동기로 끝낸다.
-	SupportSquad.finalizeLobby()
+	local supportChoice = SupportSquad.finalizeLobby()
 
 	-- NPC 기억용 경기 기록. P 슬롯·파티 키·partySize는 로비 종료 시점 명단 하나다.
 	local startIds = {}
@@ -374,7 +374,8 @@ local function runMatch(matchNumber, day)
 		end
 		-- 적용 순서: 검증 통과 뒤 PartyScale 보정 → DayRules 수 보정 → (보스 웨이브면) 보스 추가.
 		-- 파티·Day 보정은 웨이브 시작 시점 복사본에만 건다 (요약·previous_wave는 그대로).
-		local partySize = #Players:GetPlayers()
+		-- 파티 인원: 사람 + 지원대 수(최대 SupportMaxParty).
+		local partySize = SupportSquad.partySize()
 		local partyPlan = PartyScale.scalePlan(currentPlan, partySize)
 		local playPlan, bossLane = withBoss(DayRules.scalePlan(partyPlan, day), day, wave)
 		local scaledTotal = 0
@@ -426,10 +427,17 @@ local function runMatch(matchNumber, day)
 				role = player:GetAttribute("Class") or "guardian",
 			})
 		end
+		for _, bot in ipairs(SupportSquad.getBots()) do
+			table.insert(roster, {
+				userId = bot.UserId,
+				role = bot.role,
+				support = true,
+			})
+		end
 		local summary = MatchStats.buildSummary(tracker, wave, lanternHealthPct(lantern), {
 			tactic = currentPlan.tactic,
 			event = currentPlan.event,
-		}, roster, day, totalWaves)
+		}, roster, day, totalWaves, supportChoice)
 		local okSummary, summaryJson = pcall(HttpService.JSONEncode, HttpService, summary)
 		if okSummary then
 			print("[MatchStats] " .. summaryJson)
@@ -472,7 +480,7 @@ local function runMatch(matchNumber, day)
 		-- 대기 중 미리보기와 성문 강조도 웨이브 시작 때와 같은 순서로 만든다
 		-- (PartyScale → DayRules → 보스 추가, 시작 시점에 인원이 바뀌면 그때 다시 보정한다).
 		local previewPlan = withBoss(
-			DayRules.scalePlan(PartyScale.scalePlan(nextPlan, #Players:GetPlayers()), day),
+			DayRules.scalePlan(PartyScale.scalePlan(nextPlan, SupportSquad.partySize()), day),
 			day,
 			wave + 1
 		)
@@ -510,7 +518,7 @@ local function runMatch(matchNumber, day)
 		local ok, err = pcall(function()
 			MemoryStore.finishAndSave(record, result, completedWaves, startIds, function(previous, events)
 				return NpcClient.summarize(previous, events)
-			end, day, totalWaves)
+			end, day, totalWaves, supportChoice)
 		end)
 		npcSaveInProgress = false
 		if not ok then

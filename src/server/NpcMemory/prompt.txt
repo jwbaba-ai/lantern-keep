@@ -16,3 +16,4 @@ Rules:
 - mira_lines has exactly 3 short lines Mira will say next match: greeting, after wave 1, before the final wave.
 - Use only P-numbers within this party's size. If the party has 2 players, never write P3 or P4.
 - Mention the Day number when it helps (e.g. Day 2).
+- If support_squad is solo or coop, you may mention it by its Korean name (각개전투파 / 협력파).

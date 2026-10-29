@@ -20,3 +20,4 @@ Rules:
 - Vary the event across waves: do not repeat the previous wave's event, and use reinforcement_delay only when the team is clearly struggling.
 - wave_name: short and dramatic, fits a fantasy keep.
 - director_note: one short sentence a player could read, explaining the twist.
+- Roster entries with support=true are rule-based allies the team called in (support_squad: solo = spread out one per gate, coop = grouped with a healer). Treat them as part of the team.

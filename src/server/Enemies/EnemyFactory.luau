@@ -13,6 +13,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local EnemyCatalog = require(Shared:WaitForChild("EnemyCatalog"))
+-- 파티 인원(사람 + 지원대)은 SupportSquad가 셈한다.
+-- SupportSquad는 Config·ClassCatalog·SupportVote만 require하므로 순환 참조가 없다.
+local SupportSquad = require(script.Parent.Parent:WaitForChild("Support"):WaitForChild("SupportSquad"))
 
 local EnemyFactory = {
 	TimePerHealth = 0.15, -- 초/체력. 테스트 처치까지 걸리는 시간 배율
@@ -66,7 +69,8 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved, mod
 	end
 
 	-- 파티 인원 보정: 적 체력 배율 (Config.PartyHealthScale, 스폰 시점 인원 기준).
-	local partySize = math.clamp(#Players:GetPlayers(), 1, 4)
+	-- 인원은 사람 + 지원대 수(최대 SupportMaxParty)다.
+	local partySize = SupportSquad.partySize()
 	local eventMult = (mods and mods.healthMult) or 1
 	local dayMult = dayHealthMult or 1
 	local maxHp = math.max(1, math.floor(spec.Health * Config.PartyHealthScale[partySize] * eventMult * dayMult + 0.5))
@@ -115,9 +119,9 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved, mod
 	end
 	active[body] = { resolve = resolve, spec = spec }
 
-	-- 테스트 처치 타이머: 플레이어가 없을 때(자동 테스트)만 쓴다.
-	-- 1명 이상 있으면 실제 전투로만 적이 쓰러진다.
-	if Config.AutoKillWhenNoPlayers and #Players:GetPlayers() == 0 then
+	-- 테스트 처치 타이머: 사람도 지원대도 없을 때(자동 테스트)만 쓴다.
+	-- 사람이 0명이어도 지원대가 있으면 실제 전투로 진행한다.
+	if Config.AutoKillWhenNoPlayers and #Players:GetPlayers() == 0 and SupportSquad.activeCount() == 0 then
 		task.delay(maxHp * EnemyFactory.TimePerHealth, function()
 			resolve("killed")
 		end)

@@ -62,11 +62,13 @@ function MatchRecord.recordWave(record, summary, perPlayer)
 	end
 end
 
-function MatchRecord.finish(record, result, wavesCompleted, day, totalWaves)
+function MatchRecord.finish(record, result, wavesCompleted, day, totalWaves, supportSquad)
 	record.result = result
 	record.waves_completed = wavesCompleted
 	record.day = day
 	record.total_waves = totalWaves
+	-- 지원대 유형. 지원대 개별 기록은 저장하지 않는다.
+	record.support_squad = supportSquad or "none"
 end
 
 -- 모델·DataStore에 넣는 userId·이름 없는 사건 요약.
@@ -98,6 +100,7 @@ function MatchRecord.toEvent(record)
 		waves_completed = record.waves_completed,
 		day = record.day,
 		total_waves = record.total_waves,
+		support_squad = record.support_squad or "none",
 		waves = waves,
 		players = players,
 	}

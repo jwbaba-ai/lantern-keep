@@ -73,12 +73,15 @@ function MatchStats.recordRevive(tracker, player)
 	end
 end
 
--- roster: { { userId, role } } — 가만히 있던 플레이어도 요약에 넣기 위한 명단.
+-- roster: { { userId, role, support? } } — 가만히 있던 플레이어도 요약에 넣기 위한 명단.
+-- 지원대는 { userId, role, support = true }로 넣는다.
 -- waveNumber: 막 끝난 웨이브 번호. previousWave: { tactic, event }.
 -- day: 이번 판 Day 번호. totalWaves: 이번 판 웨이브 수.
-function MatchStats.buildSummary(tracker, waveNumber, lanternHealthPct, previousWave, roster, day, totalWaves)
+-- supportSquad: "solo"|"coop"|"none". 요약 맨 위에 support_squad로 더한다.
+function MatchStats.buildSummary(tracker, waveNumber, lanternHealthPct, previousWave, roster, day, totalWaves, supportSquad)
 	day = day or 1
 	totalWaves = totalWaves or waveNumber
+	supportSquad = supportSquad or "none"
 	local breachedLane = nil
 	local best = 0
 	for _, lane in ipairs(Config.Lanes) do
@@ -91,23 +94,27 @@ function MatchStats.buildSummary(tracker, waveNumber, lanternHealthPct, previous
 
 	local seen = {}
 	local players = {}
-	local function addPlayer(userId, role)
+	local function addPlayer(userId, role, support)
 		if seen[userId] or role == nil then
 			return
 		end
 		seen[userId] = true
-		table.insert(players, {
+		local entry = {
 			role = role,
 			damage = tracker.damage[userId] or 0,
 			deaths = tracker.deaths[userId] or 0,
-		})
+		}
+		if support then
+			entry.support = true
+		end
+		table.insert(players, entry)
 	end
 	for userId, role in pairs(tracker.roles) do
-		addPlayer(userId, role)
+		addPlayer(userId, role, false)
 	end
 	if roster then
 		for _, entry in ipairs(roster) do
-			addPlayer(entry.userId, entry.role)
+			addPlayer(entry.userId, entry.role, entry.support)
 		end
 	end
 	table.sort(players, function(a, b)
@@ -115,6 +122,7 @@ function MatchStats.buildSummary(tracker, waveNumber, lanternHealthPct, previous
 	end)
 
 	return {
+		support_squad = supportSquad,
 		day = day,
 		wave = waveNumber,
 		total_waves = totalWaves,

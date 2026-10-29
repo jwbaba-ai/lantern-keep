@@ -60,7 +60,7 @@ function layoutBar()
 		local overlapX = defaultX < bp.X + bs.X and bp.X < defaultX + barW
 		local overlapY = 12 < bp.Y + bs.Y and bp.Y < 12 + barH
 		if overlapX and overlapY then
-			frame.Position = UDim2.new(1, -12, 0, math.floor((bp.Y + bs.Y + 8) / s + 0.5))
+			frame.Position = UDim2.new(1, -12, 0, math.floor(bp.Y + bs.Y + 8 + 0.5))
 			return
 		end
 	end

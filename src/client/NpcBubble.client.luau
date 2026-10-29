@@ -1,5 +1,5 @@
 -- NPC 말풍선 (단일 기준: docs/tasks/day5.md 5단계).
--- 서버의 Remotes.NpcSay를 받아 NPC 머리 위 BillboardGui로 6초간 보여 준다.
+-- 서버의 Remotes.NpcSay를 받아 NPC 머리 위 BillboardGui로 9초간 보여 준다.
 -- AI 대사일 때만 작은 글씨로 "AI가 생성한 대사입니다"를 붙인다.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -101,7 +101,7 @@ local function showBubble(npcKey, text, isAI)
 	colLayout.Parent = textCol
 	makeLabel(text, 44, Color3.new(1, 1, 1), 1).Parent = textCol
 	if isAI then
-		makeLabel("AI가 생성한 대사입니다", 18, Color3.fromRGB(160, 160, 160), 2).Parent = textCol
+		makeLabel("AI가 생성한 대사입니다", 20, Color3.fromRGB(200, 200, 200), 2).Parent = textCol
 	end
 	-- 휴대폰 배율: 말풍선은 새로 뜰 때마다 지금 화면 배율을 쓴다.
 	local bubbleScale = Instance.new("UIScale")
@@ -109,7 +109,7 @@ local function showBubble(npcKey, text, isAI)
 	bubbleScale.Parent = bubble
 	bubble.Parent = gui
 	open[npcKey] = { bubble = bubble, token = token }
-	task.delay(6, function()
+	task.delay(9, function()
 		local cur = open[npcKey]
 		if cur and cur.token == token then
 			bubble:Destroy()

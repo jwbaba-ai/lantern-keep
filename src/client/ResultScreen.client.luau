@@ -68,8 +68,10 @@ end
 local titleLine = makeLabel("Title", 1, 48, Color3.new(1, 1, 1))
 local subLine = makeLabel("Sub", 2, 26, Color3.fromRGB(255, 230, 150))
 local memoryLine = makeLabel("Memory", 3, 22, Color3.fromRGB(180, 255, 180))
-local nextLine = makeLabel("Next", 4, 22, Color3.fromRGB(160, 220, 255))
-local countdownLine = makeLabel("Countdown", 6, 22, Color3.fromRGB(160, 160, 160))
+-- 셋째 줄 아래 작은 회색 고정 문구: 다음 판 대사 상태 (서버가 알려 준다).
+local npcMemoryLine = makeLabel("NpcMemory", 4, 16, Color3.fromRGB(150, 150, 150))
+local nextLine = makeLabel("Next", 5, 22, Color3.fromRGB(160, 220, 255))
+local countdownLine = makeLabel("Countdown", 7, 22, Color3.fromRGB(160, 160, 160))
 
 memoryLine.Text = "Bram과 Mira가 이번 판을 기억합니다"
 
@@ -79,7 +81,7 @@ portraitsRow.Name = "Portraits"
 portraitsRow.Size = UDim2.new(1, -24, 0, 80)
 portraitsRow.BackgroundTransparency = 1
 portraitsRow.Visible = false
-portraitsRow.LayoutOrder = 5
+portraitsRow.LayoutOrder = 6
 portraitsRow.Parent = frame
 
 local portraitsLayout = Instance.new("UIListLayout")
@@ -118,6 +120,14 @@ local function nextText(data)
 	return string.format("Day %d에 다시 도전합니다", day)
 end
 
+-- 다음 판 대사 상태 고정 문구. 서버의 finishAndSave 결과를 그대로 보여 준다.
+-- 저장이 끝나기 전 첫 알림(npc_memory 없음)에는 아무것도 쓰지 않는다.
+local NPC_MEMORY_TEXT = {
+	ai = "다음 판 대사: AI가 기억을 정리했습니다",
+	summary_failed = "다음 판 대사: 기본 대사 (요약 실패)",
+	save_failed = "다음 판 대사: 기본 대사 (저장 실패)",
+}
+
 local function render()
 	local data = lastData
 	if not data then
@@ -125,6 +135,7 @@ local function render()
 	end
 	titleLine.Text = data.display_name or ""
 	subLine.Text = data.display_note or ""
+	npcMemoryLine.Text = NPC_MEMORY_TEXT[data.npc_memory] or ""
 	nextLine.Text = nextText(data)
 	local bramArt = artOf("PortraitBram")
 	local miraArt = artOf("PortraitMira")

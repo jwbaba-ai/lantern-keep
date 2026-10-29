@@ -341,7 +341,7 @@ local function resetForNextMatch()
 	CombatService.endWave()
 end
 
-local function publishResult(day, totalWaves, wavesCompleted, source, result, endsAt)
+local function publishResult(day, totalWaves, wavesCompleted, source, result, endsAt, npcMemory)
 	DirectorState.publish(state, {
 		phase = "result",
 		displayWave = wavesCompleted,
@@ -356,6 +356,7 @@ local function publishResult(day, totalWaves, wavesCompleted, source, result, en
 		day = day,
 		totalWaves = totalWaves,
 		boss = false,
+		npcMemory = npcMemory,
 	})
 end
 
@@ -626,17 +627,33 @@ local function runMatch(matchNumber, day)
 	-- 모델 호출은 경기가 끝난 뒤 1회만. 실패해도 경기 흐름은 막지 않는다.
 	-- 파티 키·partySize는 로비 종료 시점 명단(startIds) 하나로 정한다.
 	-- 종료 시점의 Players:GetPlayers()는 쓰지 않는다 (중간 입장자 제외).
+	-- 돌려값: "ai"|"summary_failed"|"save_failed" (결과 화면에 알린다).
+	-- 저장 자체가 던지면 "save_failed"다.
 	local function finishNpcMemory(result, record, completedWaves, startIds)
 		npcSaveInProgress = true
+		local status = "save_failed"
 		local ok, err = pcall(function()
-			MemoryStore.finishAndSave(record, result, completedWaves, startIds, function(previous, events)
-				return NpcClient.summarize(previous, events)
-			end, day, totalWaves, supportChoice)
+			local _, _, npcMemory = MemoryStore.finishAndSave(
+				record,
+				result,
+				completedWaves,
+				startIds,
+				function(previous, events)
+					return NpcClient.summarize(previous, events)
+				end,
+				day,
+				totalWaves,
+				supportChoice
+			)
+			if npcMemory ~= nil then
+				status = npcMemory
+			end
 		end)
 		npcSaveInProgress = false
 		if not ok then
 			warn("[Npc] 경기 종료 처리 실패: " .. tostring(err))
 		end
+		return status
 	end
 
 	GateHighlight.stop(map)
@@ -660,10 +677,11 @@ local function runMatch(matchNumber, day)
 		warn("[Support] clear failed: " .. tostring(clearErr))
 	end
 	-- 2. 경기 종료 처리(NPC 기억 요약·저장)를 끝까지 기다린다.
-	finishNpcMemory(result, matchRecord, wavesCompleted, startIds)
+	-- 결과 화면에 다음 판 대사 상태(ai·요약 실패·저장 실패)를 함께 알린다.
+	local npcMemory = finishNpcMemory(result, matchRecord, wavesCompleted, startIds)
 	-- 3. 결과 화면을 MatchRestartSeconds초 보여 준다. 저장이 더 오래 걸리면 그만큼 늦게 시작한다.
 	local restartSeconds = Config.MatchRestartSeconds or 15
-	publishResult(day, totalWaves, wavesCompleted, currentSource, result, intermissionEndsAt(restartSeconds))
+	publishResult(day, totalWaves, wavesCompleted, currentSource, result, intermissionEndsAt(restartSeconds), npcMemory)
 	task.wait(restartSeconds)
 	-- 4. 다음 판 초기화. 직업은 유지한다.
 	resetForNextMatch()

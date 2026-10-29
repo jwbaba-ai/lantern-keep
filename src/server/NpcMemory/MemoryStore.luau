@@ -155,7 +155,10 @@ end
 -- DataStore 열기 실패는 에러를 던지므로 호출한 쪽이 pcall로 감싼다.
 -- day·totalWaves: 이번 판의 Day 번호와 웨이브 수. 기록 event에 함께 저장한다.
 -- supportSquad: 이번 판 지원대 유형("solo"|"coop"|"none"). 기록 event에 함께 저장한다.
--- 돌려값: saved, source.
+-- 돌려값: saved, source("muse"|"fallback"),
+--   npcMemory("ai"|"summary_failed"|"save_failed", 결과 화면·다음 판 대사 상태).
+--   요약·검증 실패면 "summary_failed", 요약은 됐는데 저장이 실패하면 "save_failed",
+--   둘 다 되면 "ai"다.
 -- DirectorService(실제 경기 종료)와 NpcDebug(가짜 기록)가 같은 함수를 쓴다.
 function MemoryStore.finishAndSave(record, result, wavesCompleted, userIds, summarizeFn, day, totalWaves, supportSquad)
 	MatchRecord.finish(record, result, wavesCompleted, day, totalWaves, supportSquad)
@@ -169,10 +172,18 @@ function MemoryStore.finishAndSave(record, result, wavesCompleted, userIds, summ
 		partySize,
 		summarizeFn
 	)
-	MemoryStore.save(store, key, newSaved)
+	local saveOk = MemoryStore.save(store, key, newSaved)
 	print(string.format("[Npc] summarize source=%s party_size=%d", source, partySize))
 	print(string.format("[Npc] saved events=%d", #newSaved.events))
-	return newSaved, source
+	local npcMemory
+	if source ~= "muse" then
+		npcMemory = "summary_failed"
+	elseif not saveOk then
+		npcMemory = "save_failed"
+	else
+		npcMemory = "ai"
+	end
+	return newSaved, source, npcMemory
 end
 
 return MemoryStore

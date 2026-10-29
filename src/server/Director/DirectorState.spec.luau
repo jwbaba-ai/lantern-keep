@@ -302,4 +302,34 @@ do
 	)
 end
 
+-- 12. 결과 상태에 다음 판 대사 상태(npc_memory)가 그대로 담긴다.
+do
+	local base = {
+		phase = "result",
+		displayWave = 5,
+		source = "muse",
+		plan = nil,
+		waveName = nil,
+		directorNote = nil,
+		intermissionEndsAt = 789.0,
+		filterFn = failingFilter,
+		result = "victory",
+		wavesCompleted = 5,
+		lanternHealthPct = 62,
+		day = 2,
+		totalWaves = 5,
+		boss = false,
+	}
+	local withMemory = { npcMemory = "ai" }
+	for k, v in pairs(base) do
+		withMemory[k] = withMemory[k] or v
+	end
+	local aiData = DirectorState.buildState(withMemory)
+	local pendingData = DirectorState.buildState(base)
+	check(
+		"result_npc_memory",
+		aiData.npc_memory == "ai" and pendingData.npc_memory == nil
+	)
+end
+
 return results

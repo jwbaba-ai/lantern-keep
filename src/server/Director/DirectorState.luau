@@ -97,6 +97,7 @@ end
 --   day(이번 판 Day 번호), totalWaves(이번 판 웨이브 수), boss(보스 웨이브면 true).
 --   phase가 "result"면 고정 문구만 쓴다(필터 불필요):
 --   result("victory"|"defeat"), wavesCompleted, lanternHealthPct를 함께 담는다.
+--   npcMemory("ai"|"summary_failed"|"save_failed"|nil)는 다음 판 대사 상태다.
 function DirectorState.buildState(args)
 	local day = args.day or 1
 	local totalWaves = args.totalWaves or Config.TotalWaves
@@ -154,6 +155,10 @@ function DirectorState.buildState(args)
 		state.result = args.result
 		state.waves_completed = args.wavesCompleted or 0
 		state.lantern_health_pct = args.lanternHealthPct or 0
+		-- 다음 판 대사 상태. 저장이 끝나기 전 첫 알림에는 nil이다.
+		if args.npcMemory ~= nil then
+			state.npc_memory = args.npcMemory
+		end
 	end
 	if args.plan ~= nil then
 		state.plan = args.plan

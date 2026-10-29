@@ -104,4 +104,15 @@ do
 	)
 end
 
+-- 8. 직업 이름표가 한국어(고정 표).
+do
+	check(
+		"role_ko_labels",
+		SupportSquad.koreanRoleName("guardian") == "수호자"
+			and SupportSquad.koreanRoleName("ranger") == "궁수"
+			and SupportSquad.koreanRoleName("cleric") == "사제"
+			and SupportSquad.koreanRoleName("arcanist") == "비전술사"
+	)
+end
+
 return results

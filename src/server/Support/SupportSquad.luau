@@ -46,6 +46,19 @@ local COHESION_OFFSETS = {
 	Vector3.new(0, 0, -3),
 }
 
+-- 이름표용 직업 한글 표. ClassCatalog(src/shared)는 고치지 않는다.
+local ROLE_KO = {
+	guardian = "수호자",
+	ranger = "궁수",
+	cleric = "사제",
+	arcanist = "비전술사",
+}
+
+-- 직업의 화면 표시 이름(한글). 모르는 값은 그대로 둔다.
+function SupportSquad.koreanRoleName(role)
+	return ROLE_KO[role] or role
+end
+
 local bots = {} -- 살아 있는 지원대 테이블 배열
 local lastReport = {} -- 판 끝 보고용 스냅샷
 local currentChoice = "none"
@@ -252,7 +265,7 @@ local function buildModel(bot, choice, map, spawnAt)
 		hum.Health = spec.MaxHealth
 	end
 	local squadLabel = Config.SupportSquads[choice].label
-	local display = spec and ClassCatalog[bot.role].DisplayName or bot.role
+	local display = SupportSquad.koreanRoleName(bot.role)
 	local root = model:FindFirstChild("HumanoidRootPart")
 	if root then
 		local tag = Instance.new("BillboardGui")

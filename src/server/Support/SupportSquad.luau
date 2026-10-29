@@ -518,6 +518,111 @@ local function attackRange(classKey)
 	return 0
 end
 
+-- 봇 전용 사거리 상한(스터드). ranger(120)·arcanist(80)가 사람과 같은
+-- 사거리를 쓰면 등불 옆에서 맵 전체를 쏘게 된다. ClassCatalog는 고치지 않는다.
+SupportSquad.BOT_RANGED_CAP = 45
+
+-- 등불 방어 반경(스터드). 맡은 성문에 적이 없을 때만 쓴다.
+SupportSquad.LANTERN_DEFENSE_RADIUS = 15
+
+-- 봇 사거리. ranger·arcanist는 상한을 적용한다.
+function SupportSquad.botRange(role)
+	local spec = ClassCatalog[role]
+	if spec == nil then
+		return 0
+	end
+	if role == "ranger" or role == "arcanist" then
+		return math.min(spec.Range or 0, SupportSquad.BOT_RANGED_CAP)
+	end
+	return attackRange(role)
+end
+
+-- 순수 표적 선택. enemies는 { { pos = Vector3, lane = string|nil } } 배열이다.
+-- 돌려값: 고른 항목(없으면 nil).
+-- 1. 사거리 안 후보 중 맡은 성문과 같은 적을 가장 가까운 순으로 노린다.
+--    성문 정보가 없는 적은 후보에 둔다(거리 상한만 적용).
+-- 2. 맡은 성문에 적이 없고 등불 15스터드 안에 적이 있으면 그 적을 노린다(등불 방어).
+function SupportSquad.chooseTarget(botPos, range, assignedLane, lanternPos, enemies)
+	if botPos == nil or range == nil or enemies == nil then
+		return nil
+	end
+	local best, bestDist = nil, nil
+	local function consider(entry)
+		if entry == nil or entry.pos == nil then
+			return
+		end
+		local d = (entry.pos - botPos).Magnitude
+		if d <= range and (bestDist == nil or d < bestDist) then
+			best, bestDist = entry, d
+		end
+	end
+	if assignedLane ~= nil then
+		for _, entry in ipairs(enemies) do
+			if entry.lane == nil or entry.lane == assignedLane then
+				consider(entry)
+			end
+		end
+		if best ~= nil then
+			return best
+		end
+		if lanternPos == nil then
+			return nil
+		end
+		for _, entry in ipairs(enemies) do
+			if entry.pos ~= nil
+				and (entry.pos - lanternPos).Magnitude <= SupportSquad.LANTERN_DEFENSE_RADIUS
+			then
+				consider(entry)
+			end
+		end
+		return best
+	end
+	for _, entry in ipairs(enemies) do
+		consider(entry)
+	end
+	return best
+end
+
+-- 적 파트의 성문. EnemyFactory가 붙인 Lane 속성을 먼저 보고, 없으면
+-- 이름에 성문이 들어 있는지 본다. 둘 다 없으면 nil(거리 상한만 적용).
+local function enemyLaneOf(body)
+	local lane = body:GetAttribute("Lane")
+	if type(lane) == "string" and lane ~= "" then
+		return lane
+	end
+	local name = body.Name or ""
+	for _, laneName in ipairs(Config.Lanes) do
+		if string.find(name, laneName, 1, true) then
+			return laneName
+		end
+	end
+	return nil
+end
+
+-- 살아 있는 적 파트 중 봇이 노릴 1개. chooseTarget 순수 함수에 실데이터를 넣는다.
+local function chosenEnemyPart(botPos, range, assignedLane)
+	local folder = Workspace:FindFirstChild("Enemies")
+	if not folder then
+		return nil
+	end
+	local map = Workspace:FindFirstChild("Map")
+	local lanternPos = nil
+	if map then
+		lanternPos = lanternPosition(map)
+	end
+	local list = {}
+	for _, body in ipairs(folder:GetChildren()) do
+		if body:IsA("BasePart") then
+			table.insert(list, { pos = body.Position, lane = enemyLaneOf(body), body = body })
+		end
+	end
+	local picked = SupportSquad.chooseTarget(botPos, range, assignedLane, lanternPos, list)
+	if picked then
+		return picked.body
+	end
+	return nil
+end
+
 local function accumulateDamage(bot)
 	local tracker = combat().getTracker()
 	if not tracker then
@@ -580,7 +685,7 @@ local function tickBot(bot)
 		accumulateDamage(bot)
 		return
 	end
-	local target = nearestEnemy(root.Position, attackRange(bot.role))
+	local target = chosenEnemyPart(root.Position, SupportSquad.botRange(bot.role), bot.lane)
 	if not target then
 		return
 	end

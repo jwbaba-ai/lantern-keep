@@ -146,4 +146,42 @@ do
 	check("spawn_slots_separated", ok)
 end
 
+-- 10. 사거리 120(ranger)·80(arcanist) 직업 → 봇 사거리 45.
+do
+	check(
+		"bot_range_capped",
+		SupportSquad.BOT_RANGED_CAP == 45
+			and SupportSquad.botRange("ranger") == 45
+			and SupportSquad.botRange("arcanist") == 45
+	)
+end
+
+-- 11. 맡은 성문 north, 적이 south에만 있음 → 대상 없음.
+do
+	local picked = SupportSquad.chooseTarget(
+		Vector3.new(0, 3, -13),
+		45,
+		"north",
+		Vector3.new(0, 10, 0),
+		{
+			{ pos = Vector3.new(28, 3, 18), lane = "south" },
+			{ pos = Vector3.new(25, 3, -25), lane = "south" },
+		}
+	)
+	check("lane_filter_no_target", picked == nil)
+end
+
+-- 12. 맡은 성문에 적이 없고 등불 10스터드 안에 적 있음 → 그 적.
+do
+	local near = { pos = Vector3.new(10, 3, 0), lane = "south" }
+	local picked = SupportSquad.chooseTarget(
+		Vector3.new(0, 3, -13),
+		45,
+		"north",
+		Vector3.new(0, 10, 0),
+		{ near }
+	)
+	check("lantern_defense_picks_close_enemy", picked == near)
+end
+
 return results

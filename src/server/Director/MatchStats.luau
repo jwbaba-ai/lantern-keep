@@ -11,6 +11,17 @@ local Config = require(Shared:WaitForChild("Config"))
 
 local MatchStats = {}
 
+-- 공격자의 직업. 플레이어는 Class 어트리뷰트, 지원대는 테이블의 role.
+function MatchStats.attackerRole(player)
+	if type(player.GetAttribute) == "function" then
+		local ok, role = pcall(player.GetAttribute, player, "Class")
+		if ok and role ~= nil then
+			return role
+		end
+	end
+	return player.role or player.Class
+end
+
 function MatchStats.new()
 	return {
 		spawned = 0,
@@ -39,16 +50,17 @@ function MatchStats.recordResolved(tracker, lane, how)
 end
 
 -- 공격자가 준 피해를 기록한다 (처치 여부와 무관하게 준 만큼 쌓는다).
+-- player는 플레이어 또는 지원대 테이블({ UserId, role })이다.
 function MatchStats.recordDamage(tracker, player, amount)
 	local id = player.UserId
 	tracker.damage[id] = (tracker.damage[id] or 0) + amount
-	tracker.roles[id] = tracker.roles[id] or player:GetAttribute("Class")
+	tracker.roles[id] = tracker.roles[id] or MatchStats.attackerRole(player)
 end
 
 function MatchStats.recordDeath(tracker, player)
 	local id = player.UserId
 	tracker.deaths[id] = (tracker.deaths[id] or 0) + 1
-	tracker.roles[id] = tracker.roles[id] or player:GetAttribute("Class")
+	tracker.roles[id] = tracker.roles[id] or MatchStats.attackerRole(player)
 end
 
 -- cleric 부활을 기록한다. 합계(revives)는 그대로 두고,

@@ -85,30 +85,33 @@ local function flash(fromPos, toPos, color)
 	Debris:AddItem(part, 0.2)
 end
 
-local function dealDamage(player, body, amount)
+-- 공격자: 플레이어(Player) 또는 지원대 테이블.
+-- { UserId, Character(모델), role 또는 Class 어트리뷰트 }를 가진다.
+-- MatchStats에는 이 값을 그대로 넘긴다.
+local function dealDamage(attacker, body, amount)
 	local result = EnemyFactory.damage(body, amount)
 	if result == nil then
 		return
 	end
 	if currentTracker then
 		-- 실제로 깎은 체력만 기록한다 (넘치는 피해 제외).
-		MatchStats.recordDamage(currentTracker, player, result.dealt)
+		MatchStats.recordDamage(currentTracker, attacker, result.dealt)
 	end
 end
 
-local function guardianAttack(player, root, _aim)
+local function guardianAttack(attacker, root, _aim)
 	local spec = ClassCatalog.guardian
 	local facing = root.CFrame.LookVector
 	for _, body in ipairs(enemiesInRadius(root.Position, spec.Radius)) do
 		local dir = body.Position - root.Position
 		if dir.Magnitude > 0.01 and facing:Dot(dir.Unit) > 0 then
-			dealDamage(player, body, spec.Damage)
+			dealDamage(attacker, body, spec.Damage)
 		end
 	end
 	flash(root.Position, root.Position + facing * spec.Radius, BrickColor.new("Bright orange"))
 end
 
-local function rangerAttack(player, root, aim)
+local function rangerAttack(attacker, root, aim)
 	local spec = ClassCatalog.ranger
 	local origin = root.Position + Vector3.new(0, 1.5, 0)
 	local dir = aim - origin
@@ -117,49 +120,77 @@ local function rangerAttack(player, root, aim)
 	end
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = { player.Character }
+	params.FilterDescendantsInstances = { attacker.Character }
 	local result = Workspace:Raycast(origin, dir.Unit * spec.Range, params)
 	local hitPos = origin + dir.Unit * spec.Range
 	if result then
 		hitPos = result.Position
 		local body = isEnemyPart(result.Instance)
 		if body then
-			dealDamage(player, body, spec.Damage)
+			dealDamage(attacker, body, spec.Damage)
 		end
 	end
 	flash(origin, hitPos, BrickColor.new("Bright yellow"))
 end
 
-local function arcanistAttack(player, _root, aim)
+local function arcanistAttack(attacker, _root, aim)
 	local spec = ClassCatalog.arcanist
 	for _, body in ipairs(enemiesInRadius(aim, spec.Radius)) do
-		dealDamage(player, body, spec.Damage)
+		dealDamage(attacker, body, spec.Damage)
 	end
 	flash(aim + Vector3.new(0, spec.Radius, 0), aim, BrickColor.new("Bright violet"))
 end
 
-local function clericAttack(player, root, _aim)
+-- 치유 대상: 사람 캐릭터와 지원대 모델 모두.
+local function allyCharacters()
+	local out = {}
+	for _, ally in ipairs(Players:GetPlayers()) do
+		if ally.Character then
+			table.insert(out, ally.Character)
+		end
+	end
+	local folder = Workspace:FindFirstChild("Support")
+	if folder then
+		for _, model in ipairs(folder:GetChildren()) do
+			if model:IsA("Model") then
+				table.insert(out, model)
+			end
+		end
+	end
+	return out
+end
+
+local function clericHeal(attacker, root)
 	local spec = ClassCatalog.cleric
 	-- 치유: 반경 안 아군 회복. 체력 25% 이하의 다른 아군을 살리면 revives +1.
-	for _, ally in ipairs(Players:GetPlayers()) do
-		local char = ally.Character
-		local hum = char and char:FindFirstChildOfClass("Humanoid")
-		local allyRoot = char and char:FindFirstChild("HumanoidRootPart")
+	local attackerChar = attacker.Character
+	for _, char in ipairs(allyCharacters()) do
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		local allyRoot = char:FindFirstChild("HumanoidRootPart")
 		if hum and hum.Health > 0 and allyRoot then
 			if (allyRoot.Position - root.Position).Magnitude <= spec.Radius then
 				local beforePct = hum.Health / hum.MaxHealth
 				hum.Health = math.min(hum.MaxHealth, hum.Health + spec.Heal)
-				if ally ~= player and beforePct <= CombatService.ReviveHealthPct and currentTracker then
-					MatchStats.recordRevive(currentTracker, player)
+				if char ~= attackerChar and beforePct <= CombatService.ReviveHealthPct and currentTracker then
+					MatchStats.recordRevive(currentTracker, attacker)
 				end
 				flash(root.Position, allyRoot.Position, BrickColor.new("Bright green"))
 			end
 		end
 	end
+end
+
+local function clericMelee(attacker, root)
+	local spec = ClassCatalog.cleric
 	-- 근접 공격: 반경 안의 적에게 피해.
 	for _, body in ipairs(enemiesInRadius(root.Position, spec.MeleeRadius)) do
-		dealDamage(player, body, spec.AttackDamage)
+		dealDamage(attacker, body, spec.AttackDamage)
 	end
+end
+
+local function clericAttack(attacker, root, _aim)
+	clericHeal(attacker, root)
+	clericMelee(attacker, root)
 end
 
 local ATTACKERS = {
@@ -202,6 +233,56 @@ function CombatService.markAttacked(userId, now)
 	lastAttackAt[userId] = now
 end
 
+-- 지금 웨이브의 기록 대상. 지원대 피해 누적용. 웨이브 밖이면 nil.
+function CombatService.getTracker()
+	return currentTracker
+end
+
+-- 반경 안에서 체력 비율이 가장 낮은 살아 있는 아군(사람·지원대) 모델과 비율.
+-- 없으면 nil, 1. 지원대 cleric의 치유 판단용.
+function CombatService.lowestAllyInRadius(root, radius)
+	local worst = nil
+	local worstPct = nil
+	for _, char in ipairs(allyCharacters()) do
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		local allyRoot = char:FindFirstChild("HumanoidRootPart")
+		if hum and hum.Health > 0 and hum.MaxHealth > 0 and allyRoot then
+			if (allyRoot.Position - root.Position).Magnitude <= radius then
+				local pct = hum.Health / hum.MaxHealth
+				if worstPct == nil or pct < worstPct then
+					worst = char
+					worstPct = pct
+				end
+			end
+		end
+	end
+	return worst, worstPct or 1
+end
+
+-- cleric 근접 공격만 따로. 치유가 필요 없을 때 지원대가 쓴다.
+function CombatService.clericMelee(attacker, root)
+	clericMelee(attacker, root)
+end
+
+-- 공격자(플레이어·지원대)의 직업 공격 1회. 쿨다운 검사를 함께 한다.
+-- 플레이어 RemoteEvent 경로와 지원대 행동 루프가 같은 함수를 쓴다.
+function CombatService.performAttack(attacker, classKey, root, aim)
+	local spec = ClassCatalog[classKey]
+	if not spec then
+		return
+	end
+	local userId = attacker.UserId
+	if userId == nil then
+		return
+	end
+	local now = os.clock()
+	if not CombatService.checkCooldown(classKey, userId, now) then
+		return
+	end
+	CombatService.markAttacked(userId, now)
+	ATTACKERS[classKey](attacker, root, CombatService.resolveAim(classKey, root.Position, aim))
+end
+
 attackEvent.OnServerEvent:Connect(function(player, aim)
 	if typeof(aim) ~= "Vector3" then
 		return
@@ -217,13 +298,8 @@ attackEvent.OnServerEvent:Connect(function(player, aim)
 	if not root or not humanoid or humanoid.Health <= 0 then
 		return
 	end
-	-- 쿨다운 검증.
-	local now = os.clock()
-	if not CombatService.checkCooldown(classKey, player.UserId, now) then
-		return
-	end
-	CombatService.markAttacked(player.UserId, now)
-	ATTACKERS[classKey](player, root, CombatService.resolveAim(classKey, root.Position, aim))
+	-- 쿨다운 검증은 performAttack이 맡는다.
+	CombatService.performAttack(player, classKey, root, aim)
 end)
 
 -- 사망 기록 (리스폰은 기본 리스폰을 그대로 쓴다).

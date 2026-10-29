@@ -34,6 +34,7 @@ local PartyScale = require(DirectorFolder:WaitForChild("PartyScale"))
 local MatchStats = require(DirectorFolder:WaitForChild("MatchStats"))
 local EnemyFactory = require(DirectorFolder.Parent:WaitForChild("Enemies"):WaitForChild("EnemyFactory"))
 local CombatService = require(DirectorFolder.Parent:WaitForChild("Combat"):WaitForChild("CombatService"))
+local SupportSquad = require(DirectorFolder.Parent:WaitForChild("Support"):WaitForChild("SupportSquad"))
 
 local SPAWN_INTERVAL = 1.0 -- 적 한 마리씩 꺼내는 간격(초)
 local WAVE_TIMEOUT = 180 -- 웨이브 강제 종료까지 최대 대기(초)
@@ -346,6 +347,10 @@ local function runMatch(matchNumber, day)
 		task.wait(0.5)
 	end
 
+	-- 로비 종료: 지원대 투표를 집계하고 빈자리를 채운다.
+	-- 웨이브 1 파티 계산 전에 동기로 끝낸다.
+	SupportSquad.finalizeLobby()
+
 	-- NPC 기억용 경기 기록. P 슬롯·파티 키·partySize는 로비 종료 시점 명단 하나다.
 	local startIds = {}
 	for _, player in ipairs(Players:GetPlayers()) do
@@ -527,6 +532,8 @@ local function runMatch(matchNumber, day)
 
 	-- 1. 결과 알림 (카운트다운 끝 시각은 저장 뒤에 확정한다).
 	publishResult(day, totalWaves, wavesCompleted, currentSource, result, 0)
+	-- 판 끝: 지원대를 모두 지운다. 다음 로비 투표 결과로 다시 만든다.
+	SupportSquad.clearMatch()
 	-- 2. 경기 종료 처리(NPC 기억 요약·저장)를 끝까지 기다린다.
 	finishNpcMemory(result, matchRecord, wavesCompleted, startIds)
 	-- 3. 결과 화면을 MatchRestartSeconds초 보여 준다. 저장이 더 오래 걸리면 그만큼 늦게 시작한다.

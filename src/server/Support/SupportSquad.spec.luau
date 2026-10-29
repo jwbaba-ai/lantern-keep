@@ -184,4 +184,55 @@ do
 	check("lantern_defense_picks_close_enemy", picked == near)
 end
 
+-- 13. 사람이 등불 옆(성문과 60스터드) → 맡은 성문 없음 →
+-- north 6/south 4/east 3이면 봇 3명이 north·south·east.
+do
+	local gates = {
+		north = Vector3.new(0, 3, -60),
+		south = Vector3.new(0, 3, 60),
+		east = Vector3.new(60, 3, 0),
+		west = Vector3.new(-60, 3, 0),
+	}
+	local lane = SupportSquad.nearestGateLane(Vector3.new(0, 3, 0), gates)
+	local lanes = SupportSquad.assignSoloLanes(
+		{ north = 6, south = 4, east = 3, west = 0 },
+		{},
+		3
+	)
+	check(
+		"center_claims_no_lane",
+		SupportSquad.HUMAN_GATE_RADIUS == 25
+			and lane == nil
+			and #lanes == 3
+			and lanes[1] == "north"
+			and lanes[2] == "south"
+			and lanes[3] == "east"
+	)
+end
+
+-- 14. 사람이 north 성문 10스터드 안 → north는 사람이 맡음 →
+-- 봇 3명이 south·east·west 순.
+do
+	local gates = {
+		north = Vector3.new(0, 3, -60),
+		south = Vector3.new(0, 3, 60),
+		east = Vector3.new(60, 3, 0),
+		west = Vector3.new(-60, 3, 0),
+	}
+	local lane = SupportSquad.nearestGateLane(Vector3.new(0, 3, -50), gates)
+	local lanes = SupportSquad.assignSoloLanes(
+		{ north = 6, south = 4, east = 3, west = 0 },
+		{ "north" },
+		3
+	)
+	check(
+		"near_gate_claims_lane",
+		lane == "north"
+			and #lanes == 3
+			and lanes[1] == "south"
+			and lanes[2] == "east"
+			and lanes[3] == "west"
+	)
+end
+
 return results

@@ -306,21 +306,20 @@ local function innerPoint(map, lane)
 	return Vector3.new(p.X, 3, p.Z)
 end
 
--- 사람이 서 있는 성문: 각 사람의 가장 가까운 성문.
+-- 사람이 서 있는 성문: 성문에서 25스터드 안에 있는 사람의 가장 가까운 성문.
+-- 성채 중앙에 있으면 어느 성문도 맡지 않은 것으로 본다.
 local function humanLanes(map)
+	local gatePositions = {}
+	for _, lane in ipairs(Config.Lanes) do
+		gatePositions[lane] = gatePosition(map, lane)
+	end
 	local out = {}
 	local seen = {}
 	for _, player in ipairs(Players:GetPlayers()) do
 		local char = player.Character
 		local root = char and char:FindFirstChild("HumanoidRootPart")
 		if root then
-			local best, bestDist = nil, nil
-			for _, lane in ipairs(Config.Lanes) do
-				local d = (gatePosition(map, lane) - root.Position).Magnitude
-				if bestDist == nil or d < bestDist then
-					best, bestDist = lane, d
-				end
-			end
+			local best = SupportSquad.nearestGateLane(root.Position, gatePositions)
 			if best and not seen[best] then
 				seen[best] = true
 				table.insert(out, best)
@@ -524,6 +523,30 @@ SupportSquad.BOT_RANGED_CAP = 45
 
 -- 등불 방어 반경(스터드). 맡은 성문에 적이 없을 때만 쓴다.
 SupportSquad.LANTERN_DEFENSE_RADIUS = 15
+
+-- 사람이 성문을 "맡은 것"으로 치는 반경(스터드). 성채 중앙에 서 있으면
+-- 어느 성문도 맡지 않은 것으로 본다.
+SupportSquad.HUMAN_GATE_RADIUS = 25
+
+-- 순수 함수: 사람 위치에서 가장 가까운 성문. 반경 안에 없으면 nil.
+-- gatePositions는 { [lane] = Vector3 } 표다. 동점이면 Config.Lanes 순서 앞쪽.
+function SupportSquad.nearestGateLane(humanPos, gatePositions, radius)
+	if humanPos == nil or gatePositions == nil then
+		return nil
+	end
+	radius = radius or SupportSquad.HUMAN_GATE_RADIUS
+	local best, bestDist = nil, nil
+	for _, lane in ipairs(Config.Lanes) do
+		local gatePos = gatePositions[lane]
+		if gatePos ~= nil then
+			local d = (gatePos - humanPos).Magnitude
+			if d <= radius and (bestDist == nil or d < bestDist) then
+				best, bestDist = lane, d
+			end
+		end
+	end
+	return best
+end
 
 -- 봇 사거리. ranger·arcanist는 상한을 적용한다.
 function SupportSquad.botRange(role)

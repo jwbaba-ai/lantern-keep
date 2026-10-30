@@ -14,6 +14,7 @@ local ClassCatalog = require(Shared:WaitForChild("ClassCatalog"))
 
 local SupportFolder = script.Parent
 local SupportVote = require(SupportFolder:WaitForChild("SupportVote"))
+local Labels = require(SupportFolder.Parent:WaitForChild("World"):WaitForChild("Labels"))
 
 -- CombatService·MatchStats는 함수 안에서 늦게 require한다.
 -- EnemyFactory가 파티 인원용으로 이 모듈을 require하므로
@@ -372,27 +373,23 @@ local function buildModel(bot, choice, map, spawnAt)
 	model.Name = bot.Name
 	local spec = ClassCatalog[bot.role]
 	local hum = model:FindFirstChildOfClass("Humanoid")
-	if hum and spec then
-		hum.MaxHealth = spec.MaxHealth
-		hum.Health = spec.MaxHealth
+	if hum then
+		-- "Support2" 같은 기본 Humanoid 이름은 숨긴다(공용 이름표만 보인다).
+		hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+		if spec then
+			hum.MaxHealth = spec.MaxHealth
+			hum.Health = spec.MaxHealth
+		end
 	end
-	local squadLabel = Config.SupportSquads[choice].label
+	-- 파(각개전투파·협력파)는 투표 결과로 이미 보이니 이름표에는 역할만 남긴다.
 	local display = SupportSquad.koreanRoleName(bot.role)
 	local root = model:FindFirstChild("HumanoidRootPart")
 	if root then
-		local tag = Instance.new("BillboardGui")
-		tag.Name = "Nameplate"
-		tag.Adornee = root
-		tag.Size = UDim2.new(0, 200, 0, 40)
-		tag.StudsOffsetWorldSpace = Vector3.new(0, 4, 0)
-		tag.Parent = model
-		local label = Instance.new("TextLabel")
-		label.Size = UDim2.new(1, 0, 1, 0)
-		label.BackgroundTransparency = 1
-		label.TextScaled = true
-		label.TextColor3 = Color3.new(1, 1, 1)
-		label.Text = string.format("지원대 · %s · %s", squadLabel, display)
-		label.Parent = tag
+		Labels.attach(model, root, {
+			text = string.format("지원대 · %s", display),
+			maxDistance = 50,
+			offset = Vector3.new(0, 4, 0),
+		})
 	end
 	for _, part in ipairs(model:GetDescendants()) do
 		if part:IsA("BasePart") then

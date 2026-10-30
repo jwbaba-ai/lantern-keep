@@ -19,6 +19,7 @@ local NpcFolder = script.Parent
 local MemoryStore = require(NpcFolder:WaitForChild("MemoryStore"))
 local NpcSpeech = require(NpcFolder:WaitForChild("NpcSpeech"))
 local Figures = require(NpcFolder.Parent:WaitForChild("World"):WaitForChild("Figures"))
+local Labels = require(NpcFolder.Parent:WaitForChild("World"):WaitForChild("Labels"))
 
 -- 사람 모양 장식 (day11c, 기본 파트만. 장식은 몸체의 자식이라 판정에 끼지 않는다).
 -- 앞(-Z)이 등불을 본다. NPC 1명당 장식 8개.
@@ -148,21 +149,11 @@ for _, npc in ipairs(NPCS) do
 		else
 			buildMira(body)
 		end
-		local tag = Instance.new("BillboardGui")
-		tag.Name = "Nameplate"
-		tag.Adornee = body
-		tag.Size = UDim2.new(0, 160, 0, 32)
-		tag.StudsOffsetWorldSpace = Vector3.new(0, 4, 0)
-		tag.Parent = body
-		local label = Instance.new("TextLabel")
-		label.Size = UDim2.new(1, 0, 1, 0)
-		label.BackgroundTransparency = 1
-		label.TextScaled = true
-		label.TextColor3 = Color3.new(1, 1, 1)
-		label.TextStrokeTransparency = 0
-		label.TextStrokeColor3 = Color3.new(0, 0, 0)
-		label.Text = npc.title
-		label.Parent = tag
+		Labels.attach(body, body, {
+			text = npc.title,
+			maxDistance = 60,
+			offset = Vector3.new(0, 4, 0),
+		})
 	end
 end
 

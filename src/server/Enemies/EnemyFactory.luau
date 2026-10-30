@@ -17,6 +17,16 @@ local EnemyCatalog = require(Shared:WaitForChild("EnemyCatalog"))
 -- SupportSquad는 Config·ClassCatalog·SupportVote만 require하므로 순환 참조가 없다.
 local SupportSquad = require(script.Parent.Parent:WaitForChild("Support"):WaitForChild("SupportSquad"))
 local Figures = require(script.Parent.Parent:WaitForChild("World"):WaitForChild("Figures"))
+local Labels = require(script.Parent.Parent:WaitForChild("World"):WaitForChild("Labels"))
+
+-- 적 한국어 이름표(EnemyCatalog은 고치지 않는다).
+local ENEMY_KO = {
+	Grunt = "졸개",
+	Runner = "질주병",
+	Brute = "거한",
+	Archer = "궁병",
+	Shaman = "주술사",
+}
 
 -- 종류별 실루엣 (day11c, 기본 파트만. 몸체 크기 기준 비율이라 정예 sizeMult에도 맞는다).
 -- 눈은 앞(-Z)면에 붙인다. 이동 트윈이 CFrame으로 방향을 틀면 함께 돈다.
@@ -149,21 +159,15 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved, mod
 	body:SetAttribute("EnemyType", enemyType)
 	body:SetAttribute("Lane", lane)
 
-	local gui = Instance.new("BillboardGui")
-	gui.Size = UDim2.new(0, 100, 0, 40)
-	gui.StudsOffset = Vector3.new(0, 3, 0)
-	gui.AlwaysOnTop = true
-	gui.Adornee = body
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, 0, 1, 0)
-	label.BackgroundTransparency = 1
-	label.TextScaled = true
-	label.TextColor3 = Color3.new(1, 1, 1)
-	label.TextStrokeTransparency = 0
-	label.TextStrokeColor3 = Color3.new(0, 0, 0)
-	label.Text = ((mods and mods.namePrefix) or "") .. (spec.DisplayName or enemyType)
-	label.Parent = gui
-	gui.Parent = body
+	-- DisplayName이 있는 보스는 그대로, 이벤트 접두어(namePrefix)는 앞에 붙인다.
+	-- 보스만 벽 너머로 보이게(AlwaysOnTop) 유지한다.
+	local displayName = spec.DisplayName or ENEMY_KO[enemyType] or enemyType
+	Labels.attach(body, body, {
+		text = ((mods and mods.namePrefix) or "") .. displayName,
+		maxDistance = 70,
+		alwaysOnTop = spec.DisplayName ~= nil,
+		offset = Vector3.new(0, 3, 0),
+	})
 	body.Parent = getEnemiesFolder()
 	buildSilhouette(body, enemyType)
 

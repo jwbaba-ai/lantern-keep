@@ -16,6 +16,65 @@ local EnemyCatalog = require(Shared:WaitForChild("EnemyCatalog"))
 -- 파티 인원(사람 + 지원대)은 SupportSquad가 셈한다.
 -- SupportSquad는 Config·ClassCatalog·SupportVote만 require하므로 순환 참조가 없다.
 local SupportSquad = require(script.Parent.Parent:WaitForChild("Support"):WaitForChild("SupportSquad"))
+local Figures = require(script.Parent.Parent:WaitForChild("World"):WaitForChild("Figures"))
+
+-- 종류별 실루엣 (day11c, 기본 파트만. 몸체 크기 기준 비율이라 정예 sizeMult에도 맞는다).
+-- 눈은 앞(-Z)면에 붙인다. 이동 트윈이 CFrame으로 방향을 틀면 함께 돈다.
+-- Grunt·Runner 2개, Brute·Archer·Shaman 3개, 그 밖(보스 포함)은 머리+눈 2개.
+local function buildSilhouette(body, enemyType)
+	local w, h, d = body.Size.X, body.Size.Y, body.Size.Z
+	local cf = body.CFrame
+	local color = body.BrickColor
+	-- 머리 블록.
+	local headSize = Vector3.new(w * 0.55, h * 0.28, d * 0.55)
+	local headY = h / 2 + headSize.Y / 2 - h * 0.05
+	local headCf = cf * CFrame.new(0, headY, 0)
+	if enemyType == "Runner" then
+		headCf = headCf * CFrame.Angles(0.35, 0, 0) -- 앞으로 기운 머리
+	end
+	Figures.attach(body, {
+		Name = "Head",
+		Size = headSize,
+		CFrame = headCf,
+		BrickColor = color,
+	})
+	-- 빛나는 눈 (얇은 Neon 가로 막대, 빨강).
+	Figures.attach(body, {
+		Name = "Eyes",
+		Size = Vector3.new(w * 0.5, math.max(0.15, h * 0.07), 0.2),
+		CFrame = cf * CFrame.new(0, h * 0.15, -(d / 2 + 0.1)),
+		Material = Enum.Material.Neon,
+		BrickColor = BrickColor.new("Bright red"),
+	})
+	if enemyType == "Brute" then
+		-- 넓은 어깨 블록.
+		Figures.attach(body, {
+			Name = "Shoulders",
+			Size = Vector3.new(w * 1.5, h * 0.22, d * 1.15),
+			CFrame = cf * CFrame.new(0, h * 0.32, 0),
+			BrickColor = color,
+		})
+	elseif enemyType == "Archer" then
+		-- 등에 활 (얇은 세로 막대).
+		Figures.attach(body, {
+			Name = "Bow",
+			Size = Vector3.new(0.2, h * 0.95, 0.2),
+			CFrame = cf * CFrame.new(w * 0.3, h * 0.05, d / 2 + 0.15),
+			Material = Enum.Material.Wood,
+			BrickColor = BrickColor.new("Reddish brown"),
+		})
+	elseif enemyType == "Shaman" then
+		-- 머리 위 뿔 장식 (보라).
+		local hornSize = Vector3.new(w * 0.22, h * 0.4, d * 0.22)
+		Figures.attach(body, {
+			Name = "Horn",
+			Size = hornSize,
+			CFrame = cf * CFrame.new(0, headY + headSize.Y / 2 + hornSize.Y / 2 - h * 0.05, 0),
+			Material = Enum.Material.Neon,
+			BrickColor = BrickColor.new("Bright violet"),
+		})
+	end
+end
 
 local EnemyFactory = {
 	TimePerHealth = 0.15, -- 초/체력. 테스트 처치까지 걸리는 시간 배율
@@ -106,6 +165,7 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved, mod
 	label.Parent = gui
 	gui.Parent = body
 	body.Parent = getEnemiesFolder()
+	buildSilhouette(body, enemyType)
 
 	local resolved = false
 	local function resolve(how)
@@ -130,16 +190,24 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved, mod
 	end
 
 	-- 레인 이동. 바깥에서 파트가 제거돼도 멈추도록 Parent를 확인한다.
+	-- CFrame 트윈으로 진행 방향을 바라본다: Position만 바꾸면 용접한 장식이 따라오지 않는다.
+	-- 속도·경로·도착 판정은 그대로다.
 	task.spawn(function()
 		for i = 2, #waypoints do
 			if resolved or body.Parent == nil then
 				return
 			end
 			local dist = (waypoints[i] - body.Position).Magnitude
+			local leg = waypoints[i] - body.Position
+			local goal = Figures.faceFlatCFrame(
+				waypoints[i],
+				body.CFrame.LookVector,
+				waypoints[i] + Vector3.new(leg.X, 0, leg.Z)
+			)
 			local tween = TweenService:Create(
 				body,
 				TweenInfo.new(math.max(dist / spec.Speed, 0.01), Enum.EasingStyle.Linear),
-				{ Position = waypoints[i] }
+				{ CFrame = goal }
 			)
 			local done = false
 			tween.Completed:Connect(function()

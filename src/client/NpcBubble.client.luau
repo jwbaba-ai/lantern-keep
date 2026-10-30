@@ -1,6 +1,6 @@
--- NPC 말풍선 (단일 기준: docs/tasks/day5.md 5단계, day10 4번).
--- AI 대사는 화면 아래 고정 대화창에 두 줄로 쌓아 보여 주고(9초),
--- NPC 머리 위에는 "…"만 남긴다. 기본 대사(비AI)는 예전처럼 머리 위 말풍선이다.
+-- NPC 대사 표시 (단일 기준: docs/tasks/day5.md 5단계, day10 4번, day12 1번).
+-- AI·기본 대사 모두 화면 아래 고정 대화창에 두 줄로 쌓아 보여 주고(9초),
+-- NPC 머리 위에는 "…"만 남긴다. 머리 위 큰 말풍선은 쓰지 않는다.
 -- AI 대사일 때만 작은 글씨로 "AI가 생성한 대사입니다"를 붙인다.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -32,96 +32,8 @@ gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local PART_NAMES = { bram = "Bram", mira = "Mira" }
-local open = {} -- [npcKey] = { bubble, token }
 
-local function makeLabel(text, size, color, order)
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, 0, 0, size)
-	label.BackgroundTransparency = 1
-	label.TextScaled = true
-	label.TextWrapped = true
-	label.TextColor3 = color
-	label.Text = text
-	label.LayoutOrder = order
-	return label
-end
-
--- 기본 대사(비AI)용 머리 위 말풍선. AI 대사는 아래 고정 대화창으로 간다.
-local function showBubble(npcKey, text, isAI)
-	local map = Workspace:FindFirstChild("Map")
-	local folder = map and map:FindFirstChild("Npcs")
-	local body = folder and folder:FindFirstChild(PART_NAMES[npcKey])
-	if body == nil then
-		return
-	end
-	-- 같은 NPC의 이전 말풍선을 걷는다.
-	local prev = open[npcKey]
-	if prev then
-		prev.bubble:Destroy()
-	end
-	local token = (prev and prev.token or 0) + 1
-	local bubble = Instance.new("BillboardGui")
-	bubble.Name = "NpcSpeech"
-	bubble.Adornee = body
-	bubble.Size = UDim2.new(0, 260, 0, isAI and 100 or 70)
-	bubble.StudsOffsetWorldSpace = Vector3.new(0, 6, 0)
-	bubble.AlwaysOnTop = true
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(1, 0, 1, 0)
-	frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-	frame.BackgroundTransparency = 0.2
-	frame.Parent = bubble
-	local rowLayout = Instance.new("UIListLayout")
-	rowLayout.FillDirection = Enum.FillDirection.Horizontal
-	rowLayout.Padding = UDim.new(0, 6)
-	rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	rowLayout.Parent = frame
-	-- 말풍선 왼쪽에 초상화를 둔다. ID가 0이면 글자만 나온다.
-	local portraitArt = portraitOf(npcKey)
-	local portrait = Instance.new("ImageLabel")
-	portrait.Name = "Portrait"
-	portrait.Size = UDim2.new(0, 56, 0, 56)
-	portrait.BackgroundTransparency = 1
-	portrait.Image = portraitArt or ""
-	portrait.Visible = portraitArt ~= nil
-	portrait.LayoutOrder = 1
-	portrait.Parent = frame
-	local textCol = Instance.new("Frame")
-	textCol.Name = "TextCol"
-	textCol.BackgroundTransparency = 1
-	if portraitArt then
-		textCol.Size = UDim2.new(1, -78, 1, -8)
-	else
-		textCol.Size = UDim2.new(1, -16, 1, -8)
-	end
-	textCol.LayoutOrder = 2
-	textCol.Parent = frame
-	local colLayout = Instance.new("UIListLayout")
-	colLayout.Padding = UDim.new(0, 2)
-	colLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	colLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	colLayout.Parent = textCol
-	makeLabel(text, 44, Color3.new(1, 1, 1), 1).Parent = textCol
-	if isAI then
-		makeLabel("AI가 생성한 대사입니다", 20, Color3.fromRGB(200, 200, 200), 2).Parent = textCol
-	end
-	-- 휴대폰 배율: 말풍선은 새로 뜰 때마다 지금 화면 배율을 쓴다.
-	local bubbleScale = Instance.new("UIScale")
-	bubbleScale.Scale = UiScale.factor()
-	bubbleScale.Parent = bubble
-	bubble.Parent = gui
-	open[npcKey] = { bubble = bubble, token = token }
-	task.delay(9, function()
-		local cur = open[npcKey]
-		if cur and cur.token == token then
-			bubble:Destroy()
-			open[npcKey] = nil
-		end
-	end)
-end
-
--- 화면 고정 대화창(AI 대사 전용). 화면 아래 가운데, 툴바(무기 버튼) 위다.
+-- 화면 고정 대화창(AI·기본 대사 공용). 화면 아래 가운데, 툴바(무기 버튼) 위다.
 -- 너비는 min(520, 화면 너비 - 24). 두 NPC가 동시에 말하면 세로로 쌓는다
 -- (Bram 위, Mira 아래). 서로 겹치지 않고 화면 안에 있다.
 local DIALOG_BASE_W = 520
@@ -162,6 +74,11 @@ UiScale.watch(function()
 end)
 
 local NPC_TITLE = { bram = "Bram · 노장 대장", mira = "Mira · 견습 치유사" }
+-- 대화창 이름 색: Bram 밝은 회청, Mira 밝은 초록 (어두운 배경에서 대비).
+local NPC_NAME_COLOR = {
+	bram = Color3.fromRGB(170, 205, 235),
+	mira = Color3.fromRGB(170, 235, 180),
+}
 local rows = {}
 
 -- 본문 한 줄 높이를 재서 최대 높이(3줄)를 정한다.
@@ -175,7 +92,7 @@ local function makeRow(npcKey, order)
 	row.Size = UDim2.new(1, 0, 0, 0)
 	row.AutomaticSize = Enum.AutomaticSize.Y
 	row.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-	row.BackgroundTransparency = 0.2
+	row.BackgroundTransparency = 0.1
 	row.BorderSizePixel = 0
 	row.LayoutOrder = order
 	row.Visible = false
@@ -223,7 +140,9 @@ local function makeRow(npcKey, order)
 	nameLabel.Font = Enum.Font.GothamBold
 	nameLabel.TextSize = 16
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-	nameLabel.TextColor3 = Color3.fromRGB(255, 230, 150)
+	nameLabel.TextColor3 = NPC_NAME_COLOR[npcKey] or Color3.new(1, 1, 1)
+	nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+	nameLabel.TextStrokeTransparency = 0.5
 	nameLabel.Text = NPC_TITLE[npcKey]
 	nameLabel.LayoutOrder = 1
 	nameLabel.Parent = col
@@ -235,6 +154,9 @@ local function makeRow(npcKey, order)
 	body.BackgroundTransparency = 1
 	body.Font = Enum.Font.Gotham
 	body.TextSize = BODY_TEXT_SIZE
+	body.TextColor3 = Color3.new(1, 1, 1)
+	body.TextStrokeColor3 = Color3.new(0, 0, 0)
+	body.TextStrokeTransparency = 0.5
 	body.TextWrapped = true
 	body.TextXAlignment = Enum.TextXAlignment.Left
 	body.TextYAlignment = Enum.TextYAlignment.Top
@@ -255,6 +177,8 @@ local function makeRow(npcKey, order)
 	ai.TextSize = 16
 	ai.TextXAlignment = Enum.TextXAlignment.Left
 	ai.TextColor3 = Color3.fromRGB(200, 200, 200)
+	ai.TextStrokeColor3 = Color3.new(0, 0, 0)
+	ai.TextStrokeTransparency = 0.5
 	ai.Text = "AI가 생성한 대사입니다"
 	ai.LayoutOrder = 3
 	ai.Parent = col
@@ -288,7 +212,7 @@ local function showDialog(npcKey, text, isAI)
 	end)
 end
 
--- 머리 위 "…" 표시. AI 대사가 나갈 때 누가 말하는지 9초 동안 보인다.
+-- 머리 위 "…" 표시. 대사가 나갈 때 누가 말하는지 9초 동안 보인다.
 local dots = {}
 local function showDot(npcKey)
 	local map = Workspace:FindFirstChild("Map")
@@ -339,10 +263,7 @@ npcSay.OnClientEvent:Connect(function(payload)
 	if type(payload.text) ~= "string" or payload.text == "" then
 		return
 	end
-	if payload.isAI == true then
-		showDialog(payload.npc, payload.text, true)
-		showDot(payload.npc)
-	else
-		showBubble(payload.npc, payload.text, false)
-	end
+	-- AI·기본 대사 모두 아래 고정 대화창에. 머리 위에는 "…"만 둔다.
+	showDialog(payload.npc, payload.text, payload.isAI == true)
+	showDot(payload.npc)
 end)

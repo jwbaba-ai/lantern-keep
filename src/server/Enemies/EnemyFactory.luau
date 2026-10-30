@@ -190,7 +190,8 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved, mod
 	end
 
 	-- 레인 이동. 바깥에서 파트가 제거돼도 멈추도록 Parent를 확인한다.
-	-- CFrame 트윈으로 진행 방향을 바라본다: Position만 바꾸면 용접한 장식이 따라오지 않는다.
+	-- 각 구간 시작에 방향을 먼저 즉시 맞추고, 트윈은 위치만 옮긴다.
+	-- Position 트윈으로 되돌리지 않는다(용접 장식이 따라오지 않는다).
 	-- 속도·경로·도착 판정은 그대로다.
 	task.spawn(function()
 		for i = 2, #waypoints do
@@ -198,12 +199,8 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved, mod
 				return
 			end
 			local dist = (waypoints[i] - body.Position).Magnitude
-			local leg = waypoints[i] - body.Position
-			local goal = Figures.faceFlatCFrame(
-				waypoints[i],
-				body.CFrame.LookVector,
-				waypoints[i] + Vector3.new(leg.X, 0, leg.Z)
-			)
+			body.CFrame = Figures.faceFlatCFrame(body.Position, body.CFrame.LookVector, waypoints[i])
+			local goal = CFrame.new(waypoints[i]) * body.CFrame.Rotation
 			local tween = TweenService:Create(
 				body,
 				TweenInfo.new(math.max(dist / spec.Speed, 0.01), Enum.EasingStyle.Linear),

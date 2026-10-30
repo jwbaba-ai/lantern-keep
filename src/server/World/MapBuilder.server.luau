@@ -55,10 +55,11 @@ local function addGateLabel(gate, lane)
 	local tag = Instance.new("BillboardGui")
 	tag.Name = "GateLabel"
 	tag.Adornee = gate
+	-- 글자 높이 y 30(성문 중심 6 + 24): 탑 꼭대기(톱니 y 25)보다 위라 가로대·탑에 가리지 않는다.
 	tag.Size = UDim2.fromScale(10, 3)
-	tag.StudsOffsetWorldSpace = Vector3.new(0, 9, 0)
+	tag.StudsOffsetWorldSpace = Vector3.new(0, 24, 0)
 	tag.MaxDistance = 250
-	tag.AlwaysOnTop = false
+	tag.AlwaysOnTop = true
 	tag.Parent = gate
 	local text = Instance.new("TextLabel")
 	text.Size = UDim2.new(1, 0, 1, 0)

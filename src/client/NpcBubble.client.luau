@@ -1,7 +1,8 @@
--- NPC 대사 표시 (단일 기준: docs/tasks/day5.md 5단계, day10 4번, day12 1번).
+-- NPC 대사 표시 (단일 기준: docs/tasks/day5.md 5단계, day10 4번, day12 1번, day12b 1번).
 -- AI·기본 대사 모두 화면 아래 고정 대화창에 두 줄로 쌓아 보여 주고(9초),
 -- NPC 머리 위에는 "…"만 남긴다. 머리 위 큰 말풍선은 쓰지 않는다.
 -- AI 대사일 때만 작은 글씨로 "AI가 생성한 대사입니다"를 붙인다.
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextService = game:GetService("TextService")
@@ -264,6 +265,37 @@ npcSay.OnClientEvent:Connect(function(payload)
 		return
 	end
 	-- AI·기본 대사 모두 아래 고정 대화창에. 머리 위에는 "…"만 둔다.
-	showDialog(payload.npc, payload.text, payload.isAI == true)
-	showDot(payload.npc)
+	-- 투표 결과 창이 떠 있으면 대사를 잠시 미룬다(SupportVote.client는 고치지 않는다).
+	-- SupportState(JSON)의 announce가 비어 있지 않고 announce_until이 아직이면
+	-- 남은 시간 + 0.5초 뒤에 보여 준다. 읽기 실패·값 없음·숫자 아님은 바로 보여 준다.
+	local delay = 0
+	pcall(function()
+		local state = ReplicatedStorage:FindFirstChild("SupportState")
+		if state == nil or type(state.Value) ~= "string" or state.Value == "" then
+			return
+		end
+		local data = HttpService:JSONDecode(state.Value)
+		if type(data) ~= "table" then
+			return
+		end
+		if type(data.announce) ~= "string" or data.announce == "" then
+			return
+		end
+		if type(data.announce_until) ~= "number" then
+			return
+		end
+		local remain = data.announce_until - Workspace:GetServerTimeNow()
+		if remain > 0 then
+			delay = remain + 0.5
+		end
+	end)
+	if delay > 0 then
+		task.delay(delay, function()
+			showDialog(payload.npc, payload.text, payload.isAI == true)
+			showDot(payload.npc)
+		end)
+	else
+		showDialog(payload.npc, payload.text, payload.isAI == true)
+		showDot(payload.npc)
+	end
 end)

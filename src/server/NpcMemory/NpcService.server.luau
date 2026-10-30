@@ -18,10 +18,90 @@ local Config = require(Shared:WaitForChild("Config"))
 local NpcFolder = script.Parent
 local MemoryStore = require(NpcFolder:WaitForChild("MemoryStore"))
 local NpcSpeech = require(NpcFolder:WaitForChild("NpcSpeech"))
+local Figures = require(NpcFolder.Parent:WaitForChild("World"):WaitForChild("Figures"))
+
+-- 사람 모양 장식 (day11c, 기본 파트만. 장식은 몸체의 자식이라 판정에 끼지 않는다).
+-- 앞(-Z)이 등불을 본다. NPC 1명당 장식 8개.
+local SKIN = BrickColor.new("Nougat")
+
+-- 공통: 머리(살색 공) + 다리 2 + 팔 2.
+local function buildCommon(body, limbColor)
+	local cf = body.CFrame
+	Figures.attach(body, {
+		Name = "Head",
+		Size = Vector3.new(1.6, 1.6, 1.6),
+		Shape = Enum.PartType.Ball,
+		CFrame = cf * CFrame.new(0, 3.3, 0),
+		BrickColor = SKIN,
+	})
+	for _, side in ipairs({ -1, 1 }) do
+		Figures.attach(body, {
+			Name = side < 0 and "LegL" or "LegR",
+			Size = Vector3.new(0.7, 2, 0.5),
+			CFrame = cf * CFrame.new(side * 0.5, -1.4, -1),
+			BrickColor = limbColor,
+		})
+		Figures.attach(body, {
+			Name = side < 0 and "ArmL" or "ArmR",
+			Size = Vector3.new(0.5, 2.2, 0.5),
+			CFrame = cf * CFrame.new(side * 1.25, 0.3, 0),
+			BrickColor = limbColor,
+		})
+	end
+end
+
+-- Bram(노장 대장): 금속 갑옷 몸통 + 어깨 보호대 2 + 오른손 검.
+local function buildBram(body)
+	buildCommon(body, BrickColor.new("Dark stone grey"))
+	local cf = body.CFrame
+	for _, side in ipairs({ -1, 1 }) do
+		Figures.attach(body, {
+			Name = side < 0 and "ShoulderL" or "ShoulderR",
+			Size = Vector3.new(1, 0.5, 1.2),
+			CFrame = cf * CFrame.new(side * 1.25, 1.6, 0),
+			Material = Enum.Material.Metal,
+			BrickColor = BrickColor.new("Dark stone grey"),
+		})
+	end
+	Figures.attach(body, {
+		Name = "Sword",
+		Size = Vector3.new(0.25, 3.2, 0.25),
+		CFrame = cf * CFrame.new(1.25, -0.3, -0.3),
+		Material = Enum.Material.Metal,
+		BrickColor = BrickColor.new("Medium stone grey"),
+	})
+end
+
+-- Mira(견습 치유사): 흰 로브 몸통 + 초록 망토 + 왼손 지팡이(끝에 초록 공).
+local function buildMira(body)
+	buildCommon(body, BrickColor.new("White"))
+	local cf = body.CFrame
+	Figures.attach(body, {
+		Name = "Cloak",
+		Size = Vector3.new(1.8, 4, 0.3),
+		CFrame = cf * CFrame.new(0, 0, 1.1),
+		BrickColor = BrickColor.new("Dark green"),
+	})
+	Figures.attach(body, {
+		Name = "Staff",
+		Size = Vector3.new(0.25, 4.2, 0.25),
+		CFrame = cf * CFrame.new(-1.25, 0.2, -0.2),
+		Material = Enum.Material.Wood,
+		BrickColor = BrickColor.new("Reddish brown"),
+	})
+	Figures.attach(body, {
+		Name = "StaffTip",
+		Size = Vector3.new(0.6, 0.6, 0.6),
+		Shape = Enum.PartType.Ball,
+		CFrame = cf * CFrame.new(-1.25, 2.5, -0.2),
+		Material = Enum.Material.Neon,
+		BrickColor = BrickColor.new("Bright green"),
+	})
+end
 
 local NPCS = {
-	{ key = "bram", title = "Bram · 노장 대장", offset = Vector3.new(8, 0, 6), color = "Medium stone grey" },
-	{ key = "mira", title = "Mira · 견습 치유사", offset = Vector3.new(-8, 0, 6), color = "White" },
+	{ key = "bram", title = "Bram · 노장 대장", offset = Vector3.new(12, 0, 8), color = "Dark stone grey", material = Enum.Material.Metal },
+	{ key = "mira", title = "Mira · 견습 치유사", offset = Vector3.new(-12, 0, 8), color = "White", material = Enum.Material.SmoothPlastic },
 }
 local LINES_KEY = { bram = "bram_lines", mira = "mira_lines" }
 
@@ -56,15 +136,22 @@ for _, npc in ipairs(NPCS) do
 		local body = Instance.new("Part")
 		body.Name = name
 		body.Size = Vector3.new(2, 5, 2)
-		body.Position = lantern.Position + npc.offset - Vector3.new(0, 7.5, 0)
+		local pos = lantern.Position + npc.offset - Vector3.new(0, 7.5, 0)
+		body.CFrame = Figures.faceFlatCFrame(pos, Vector3.new(0, 0, -1), lantern.Position)
 		body.Anchored = true
 		body.CanCollide = false
 		body.BrickColor = BrickColor.new(npc.color)
+		body.Material = npc.material
 		body.Parent = npcsFolder
+		if npc.key == "bram" then
+			buildBram(body)
+		else
+			buildMira(body)
+		end
 		local tag = Instance.new("BillboardGui")
 		tag.Name = "Nameplate"
 		tag.Adornee = body
-		tag.Size = UDim2.new(0, 200, 0, 40)
+		tag.Size = UDim2.new(0, 160, 0, 32)
 		tag.StudsOffsetWorldSpace = Vector3.new(0, 4, 0)
 		tag.Parent = body
 		local label = Instance.new("TextLabel")
@@ -72,6 +159,8 @@ for _, npc in ipairs(NPCS) do
 		label.BackgroundTransparency = 1
 		label.TextScaled = true
 		label.TextColor3 = Color3.new(1, 1, 1)
+		label.TextStrokeTransparency = 0
+		label.TextStrokeColor3 = Color3.new(0, 0, 0)
 		label.Text = npc.title
 		label.Parent = tag
 	end

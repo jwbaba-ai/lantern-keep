@@ -71,7 +71,7 @@ local function buildPlaza(decor)
 		Name = "Plaza",
 		Position = Vector3.new(0, 0.1, 0),
 		Material = Enum.Material.Slate,
-		BrickColor = BrickColor.new("Medium stone grey"),
+		Color = Color3.fromRGB(78, 74, 70), -- 어두운 회갈색 (day11c: 등불 빛에 하얗게 날지 않게)
 	}, 110, 0.2)
 	disc.Parent = decor
 end

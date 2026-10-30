@@ -88,8 +88,16 @@ fill.BackgroundColor3 = Color3.fromRGB(255, 200, 60)
 fill.BorderSizePixel = 0
 fill.Parent = back
 
-local map = Workspace:WaitForChild("Map")
-local lantern = map:WaitForChild("Lantern")
+-- 등불이 늦게 생겨도 경고 없이 기다린다. 시간 제한을 주면 5초를 넘겨도 경고가 나오지 않는다.
+-- nil이면 다시 기다린다: 체력바 스크립트가 끝나 버리면 안 된다.
+-- 기다리는 동안 체력바는 위에서 만든 가득 찬 상태로 보인다.
+local lantern = nil
+while lantern == nil do
+	local map = Workspace:WaitForChild("Map", 60)
+	if map then
+		lantern = map:WaitForChild("Lantern", 60)
+	end
+end
 
 local lowHealth = false
 

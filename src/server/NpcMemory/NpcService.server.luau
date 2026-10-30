@@ -149,10 +149,11 @@ for _, npc in ipairs(NPCS) do
 		else
 			buildMira(body)
 		end
+		-- 이름표 중심이 머리 꼭대기(y 6.60)보다 위에 오게 몸체 위 +5.5에 둔다.
 		Labels.attach(body, body, {
 			text = npc.title,
 			maxDistance = 60,
-			offset = Vector3.new(0, 4, 0),
+			offset = Vector3.new(0, 5.5, 0),
 		})
 	end
 end

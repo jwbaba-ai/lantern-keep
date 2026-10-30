@@ -162,14 +162,22 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved, mod
 	-- DisplayName이 있는 보스는 그대로, 이벤트 접두어(namePrefix)는 앞에 붙인다.
 	-- 보스만 벽 너머로 보이게(AlwaysOnTop) 유지한다.
 	local displayName = spec.DisplayName or ENEMY_KO[enemyType] or enemyType
+	body.Parent = getEnemiesFolder()
+	buildSilhouette(body, enemyType)
+	-- 종류·정예 크기마다 키가 다르니 고정값을 쓰지 않고,
+	-- 몸체와 장식 중 가장 높은 윗면 위 1.5에 이름표를 둔다.
+	local top = body.Position.Y + body.Size.Y / 2
+	for _, part in ipairs(body:GetChildren()) do
+		if part:IsA("BasePart") then
+			top = math.max(top, part.Position.Y + part.Size.Y / 2)
+		end
+	end
 	Labels.attach(body, body, {
 		text = ((mods and mods.namePrefix) or "") .. displayName,
 		maxDistance = 70,
 		alwaysOnTop = spec.DisplayName ~= nil,
-		offset = Vector3.new(0, 3, 0),
+		offset = Vector3.new(0, top - body.Position.Y + 1.5, 0),
 	})
-	body.Parent = getEnemiesFolder()
-	buildSilhouette(body, enemyType)
 
 	local resolved = false
 	local function resolve(how)

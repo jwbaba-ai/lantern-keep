@@ -9,4 +9,4 @@
 | assets/images/portrait_warlord.png | 신규 | Muse Image로 해커톤 기간 생성 (보스 초상화) | day8 |
 | assets/images/banner_boss.png | 신규 | Muse Image로 해커톤 기간 생성 (보스 배너) | day8 |
 | assets/images/icon.png | 신규 | Muse Image로 해커톤 기간 생성 (체험 아이콘, 게임 코드에서 미사용) | day8 |
-| 맵 장식(MapDecor) | 신규 | 기본 도형·재질·조명만 사용, 해커톤 기간 작성 | day11 |
+| 맵 장식(MapDecor) + NPC·적 외형(기본 파트) | 신규 | 기본 도형·재질·조명만 사용, 해커톤 기간 작성 | day11·day11c |

@@ -13,6 +13,13 @@
 - AI 글자 규칙은 그대로다: 필터를 거친 글자만 보이고, AI 대사에는 "AI가 생성한 대사입니다"를 붙인다.
 - 환경 설정·패키지 설치 명령과 Studio를 찾거나 실행하는 명령은 쓰지 않는다. Studio 확인은 Claude Code가 한다.
 
+## 찾아갈 위치 (2026-10-30 기준, 검색·폴더 목록 명령 없이 바로 연다)
+- 성문 글자: `src/server/World/MapBuilder.server.luau` 51줄 `addGateLabel`
+- NPC 이름표: `src/server/NpcMemory/NpcService.server.luau` 151줄
+- 지원대 이름표: `src/server/Support/SupportSquad.luau` 383줄
+- 적 이름표: `src/server/Enemies/EnemyFactory.luau` 152줄
+- 대화창·말풍선: `src/client/NpcBubble.client.luau` 63줄(머리 위), 231줄(`makeRow` 본문), 305줄
+
 ## 1. [높음] NPC 대사가 보이지 않음 — `NpcBubble.client.luau`
 - **주원인(사람 휴대폰 영상으로 확인)**: 아래 대화창에 이름·초상화·"AI가 생성한 대사입니다"는 나오는데 **대사 본문만 안 보인다**. 본문 자리(빈 줄)는 잡혀 있다.
   - `makeRow`의 본문 `body`(이름 "Line", 231~248줄)에 `TextColor3`를 넣지 않았다. 그래서 TextLabel 기본색(어두운 남색 27,42,53)으로 그려져 어두운 배경(20,20,30)에 묻힌다.

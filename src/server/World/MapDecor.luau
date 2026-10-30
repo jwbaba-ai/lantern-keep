@@ -65,6 +65,21 @@ local function applyBaseplate()
 	end
 end
 
+-- place에 저장된 SpawnLocation이 등불 받침대와 겹쳐 하얗게 보이면 숨긴다.
+-- 위치·크기·충돌·Enabled 등 스폰 동작에 쓰는 속성은 그대로 둔다.
+-- Decor 폴더 밖이라 장식 파트 수에는 세지 않는다.
+local function hideSpawnLocation()
+	local spawn = workspace:FindFirstChildOfClass("SpawnLocation")
+	if spawn and spawn:IsA("BasePart") then
+		spawn.Transparency = 1
+		for _, child in ipairs(spawn:GetChildren()) do
+			if child:IsA("Decal") then
+				child.Transparency = 1
+			end
+		end
+	end
+end
+
 -- 성채 안쪽 광장: 반지름 55 Slate 원판 (얇고 충돌 없음).
 local function buildPlaza(decor)
 	local disc = makeCylinder({
@@ -370,6 +385,7 @@ function MapDecor.build(map)
 	decor.Name = "Decor"
 	decor.Parent = map
 	applyBaseplate()
+	hideSpawnLocation()
 	buildPlaza(decor)
 	buildWalls(decor)
 	buildTowers(decor)

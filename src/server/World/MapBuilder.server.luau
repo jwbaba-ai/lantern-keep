@@ -77,13 +77,15 @@ local function buildMap()
 	local map = Instance.new("Folder")
 	map.Name = "Map"
 
-	-- 등불: 높은 기둥 + 빛. Health 어트리뷰트가 경기 체력이다.
+	-- 등불: 가는 반투명 기둥 + 빛. Health 어트리뷰트가 경기 체력이다.
+	-- 기본 카메라 가운데를 차지하지 않게 2x20x2, 투명도 0.3이다.
 	local lantern = makePart({
 		Name = "Lantern",
-		Size = Vector3.new(4, 20, 4),
+		Size = Vector3.new(2, 20, 2),
 		Position = Vector3.new(0, 10, 0),
 		BrickColor = BrickColor.new("Bright yellow"),
 		Material = Enum.Material.Neon,
+		Transparency = 0.3,
 	})
 	lantern:SetAttribute("Health", Config.LanternMaxHealth)
 	local light = Instance.new("PointLight")

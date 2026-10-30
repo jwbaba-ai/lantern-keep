@@ -48,6 +48,13 @@ local GATE_LABEL = {
 	west = "서문 W",
 }
 
+-- 성문 글자색: 밤하늘에서 읽히게 밝게. 동문은 지금 값(밝은 노랑) 그대로 둔다.
+local GATE_TEXT_COLOR = {
+	north = Color3.fromRGB(120, 190, 255),
+	south = Color3.fromRGB(255, 130, 120),
+	west = Color3.fromRGB(130, 230, 130),
+}
+
 local function addGateLabel(gate, lane)
 	if gate:FindFirstChild("GateLabel") then
 		return
@@ -56,7 +63,7 @@ local function addGateLabel(gate, lane)
 	tag.Name = "GateLabel"
 	tag.Adornee = gate
 	-- 글자 높이 y 30(성문 중심 6 + 24): 탑 꼭대기(톱니 y 25)보다 위라 가로대·탑에 가리지 않는다.
-	tag.Size = UDim2.fromScale(10, 3)
+	tag.Size = UDim2.fromScale(16, 5)
 	tag.StudsOffsetWorldSpace = Vector3.new(0, 24, 0)
 	tag.MaxDistance = 250
 	tag.AlwaysOnTop = true
@@ -67,7 +74,7 @@ local function addGateLabel(gate, lane)
 	text.TextScaled = true
 	text.Font = Enum.Font.GothamBold
 	text.Text = GATE_LABEL[lane]
-	text.TextColor3 = BrickColor.new(GATE_COLORS[lane]).Color
+	text.TextColor3 = GATE_TEXT_COLOR[lane] or BrickColor.new(GATE_COLORS[lane]).Color
 	text.TextStrokeColor3 = Color3.new(0, 0, 0)
 	text.TextStrokeTransparency = 0
 	text.Parent = tag

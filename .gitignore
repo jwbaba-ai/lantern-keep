@@ -13,3 +13,6 @@ tools/out/
 .agents/
 tmp*/
 generated_images/
+
+# 사람 휴대폰 녹화 영상 (저장소에 올리지 않음)
+docs/devlog/video/

@@ -1,5 +1,5 @@
 -- 지원대 투표 패널 (단일 기준: docs/tasks/day8b-support.md 3단계).
--- 로비 동안 보인다 (직업 선택 전에는 배너 아래, 선택 뒤에는 화면 가운데).
+-- 로비 동안 직업을 고른 뒤에만 화면 가운데에 보인다.
 -- 버튼 3개(각개전투파·협력파·지원대 없이)와
 -- 실시간 투표 현황(누가 무엇을 골랐는지, 표 수)을 보여 준다.
 -- 서버 코드에 적힌 고정 문구만 쓰므로 AI 고지는 붙이지 않는다.
@@ -40,22 +40,15 @@ frame.Parent = gui
 local frameScale = Instance.new("UIScale")
 frameScale.Parent = frame
 
--- 직업을 고르기 전에는 배너(위 12 + 높이 150*배율) 아래에 붙는다.
--- 직업을 고른 뒤에는 로비 동안 화면 가운데에 크게 둔다
--- (직업 선택 창은 고른 뒤 닫히므로 겹치지 않는다).
-local currentScale = 1
+-- 로비 투표 패널은 직업을 고른 뒤에만 보인다.
+-- 화면 가운데에 둔다 (직업 선택 창은 고른 뒤 닫히므로 겹치지 않는다).
 local hasClass = player:GetAttribute("Class") ~= nil
 local function applyLayout()
-	if hasClass then
-		frame.AnchorPoint = Vector2.new(0.5, 0.5)
-		frame.Position = UDim2.new(0.5, 0, 0.5, 0)
-	else
-		frame.AnchorPoint = Vector2.new(0.5, 0)
-		frame.Position = UDim2.new(0.5, 0, 0, math.floor(12 + 150 * currentScale + 8 + 0.5))
-	end
+	frame.AnchorPoint = Vector2.new(0.5, 0.5)
+	frame.Position = UDim2.new(0.5, 0, 0.5, 0)
 end
+applyLayout()
 UiScale.watch(function(s)
-	currentScale = s
 	frameScale.Scale = s
 	applyLayout()
 end)
@@ -68,6 +61,8 @@ local layout = Instance.new("UIListLayout")
 layout.Padding = UDim.new(0, 4)
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 layout.VerticalAlignment = Enum.VerticalAlignment.Top
+-- 기본 SortOrder(Name)면 LayoutOrder가 무시돼 제목이 아래로 가므로 명시한다.
+layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Parent = frame
 
 local function makeLabel(name, order, size, color)
@@ -107,9 +102,10 @@ buttonLayout.FillDirection = Enum.FillDirection.Horizontal
 buttonLayout.Padding = UDim.new(0, 8)
 buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 buttonLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+buttonLayout.SortOrder = Enum.SortOrder.LayoutOrder
 buttonLayout.Parent = buttonRow
 
-for _, def in ipairs(BUTTONS) do
+for i, def in ipairs(BUTTONS) do
 	local button = Instance.new("TextButton")
 	button.Name = def.choice
 	button.Size = UDim2.new(0, 120, 0, 32)
@@ -117,6 +113,7 @@ for _, def in ipairs(BUTTONS) do
 	button.TextColor3 = Color3.new(1, 1, 1)
 	button.TextScaled = true
 	button.Text = def.text
+	button.LayoutOrder = i
 	button.Parent = buttonRow
 	button.MouseButton1Click:Connect(function()
 		voteEvent:FireServer(def.choice)
@@ -149,7 +146,8 @@ local function render()
 			counts.none or 0
 		)
 		announceLine.Text = ""
-		frame.Visible = true
+		-- 직업을 고른 뒤에만 보인다.
+		frame.Visible = hasClass
 		return
 	end
 	-- 로비 뒤: 집계 알림이 6초 동안만 보인다.
@@ -166,6 +164,11 @@ local function render()
 		frame.Visible = false
 	end
 end
+
+-- 직업을 고르면 투표 패널이 바로 보이게 다시 그린다.
+player:GetAttributeChangedSignal("Class"):Connect(function()
+	render()
+end)
 
 local directorState = ReplicatedStorage:WaitForChild("DirectorState")
 local supportState = ReplicatedStorage:WaitForChild("SupportState")

@@ -174,6 +174,8 @@ local layout = Instance.new("UIListLayout")
 layout.Padding = UDim.new(0, 2)
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 layout.VerticalAlignment = Enum.VerticalAlignment.Center
+-- 기본 SortOrder(Name)면 LayoutOrder가 무시돼 웨이브 이름이 맨 아래로 가므로 명시한다.
+layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Parent = textFrame
 
 local function makeLabel(name, order, size, color)
@@ -213,6 +215,7 @@ laneRowLayout.FillDirection = Enum.FillDirection.Horizontal
 laneRowLayout.Padding = UDim.new(0, 4)
 laneRowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 laneRowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+laneRowLayout.SortOrder = Enum.SortOrder.LayoutOrder
 laneRowLayout.Parent = laneRow
 
 -- [보스] 앞에 작게 붙는 초상화. ID가 0이면 글자만 나온다 (말풍선과 같은 규칙).

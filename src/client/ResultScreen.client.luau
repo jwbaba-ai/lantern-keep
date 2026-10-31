@@ -49,6 +49,8 @@ local layout = Instance.new("UIListLayout")
 layout.Padding = UDim.new(0, 6)
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 layout.VerticalAlignment = Enum.VerticalAlignment.Center
+-- 기본 SortOrder(Name)면 LayoutOrder가 무시돼 "Day N 승리!"가 아래로 가므로 명시한다.
+layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Parent = frame
 
 local function makeLabel(name, order, size, color)
@@ -89,6 +91,7 @@ portraitsLayout.FillDirection = Enum.FillDirection.Horizontal
 portraitsLayout.Padding = UDim.new(0, 12)
 portraitsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 portraitsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+portraitsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 portraitsLayout.Parent = portraitsRow
 
 local function makePortrait(name, order)
@@ -115,7 +118,7 @@ local function nextText(data)
 		local nextDay = day + 1
 		local counts = Config.DayWaveCounts or { 3 }
 		local nextWaves = counts[math.clamp(nextDay, 1, #counts)]
-		return string.format("다음은 Day %d (웨이브 %d)", nextDay, nextWaves)
+		return string.format("다음은 Day %d (%d웨이브)", nextDay, nextWaves)
 	end
 	return string.format("Day %d에 다시 도전합니다", day)
 end

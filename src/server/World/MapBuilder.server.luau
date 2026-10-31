@@ -116,13 +116,15 @@ local function buildMap()
 		local gatePos = dir * GATE_DISTANCE
 		local spawnPos = dir * SPAWN_DISTANCE
 
-		-- 성문 (동/서는 길쭉한 방향을 90도 돌린다)
+		-- 성문 (동/서는 길쭉한 방향을 90도 돌린다).
+		-- 색이 비치는 철창문이라 기본 투명도 0.8이다 (이름·크기·위치·충돌 그대로).
 		local wideX = lane == "north" or lane == "south"
 		local gate = makePart({
 			Name = lane,
 			Size = wideX and Vector3.new(16, 12, 2) or Vector3.new(2, 12, 16),
 			Position = Vector3.new(gatePos.X, 6, gatePos.Z),
 			BrickColor = BrickColor.new(GATE_COLORS[lane]),
+			Transparency = 0.8,
 		})
 		gate.Parent = gates
 		addGateLabel(gate, lane)
@@ -164,13 +166,16 @@ local map = workspace:FindFirstChild("Map")
 if not map then
 	map = buildMap()
 end
--- 이미 저장된 맵에도 이름표가 없으면 붙인다.
+-- 이미 저장된 맵에도 이름표가 없으면 붙이고, 성문을 철창문 투명도로 맞춘다.
 local gatesFolder = map:FindFirstChild("Gates")
 if gatesFolder then
 	for _, lane in ipairs(Config.Lanes) do
 		local gate = gatesFolder:FindFirstChild(lane)
 		if gate then
 			addGateLabel(gate, lane)
+			if gate:IsA("BasePart") then
+				gate.Transparency = 0.8
+			end
 		end
 	end
 end

@@ -202,6 +202,32 @@ local function buildGateFrames(decor, gates)
 				BrickColor = BrickColor.new("Reddish brown"),
 			})
 			lintel.Parent = decor
+			-- 쇠창살 5개(굵기 0.6, 높이 12, 간격 3씩 고르게)와 위쪽 가로대 1개.
+			-- 성문색 파트(투명도 0.8)와 겹쳐 색이 비치는 철창문처럼 보인다.
+			-- 적·투사체 판정에 끼지 않게 충돌·쿼리·접촉을 모두 끈다.
+			for i = 1, 5 do
+				local bpos = center + perp * ((i - 3) * 3)
+				local bar = makePart({
+					Name = "GateBar_" .. lane .. "_" .. i,
+					Size = Vector3.new(0.6, 12, 0.6),
+					Position = Vector3.new(bpos.X, 6, bpos.Z),
+					Material = Enum.Material.Metal,
+					BrickColor = BrickColor.new("Dark stone grey"),
+					CanQuery = false,
+					CanTouch = false,
+				})
+				bar.Parent = decor
+			end
+			local topBar = makePart({
+				Name = "GateTopBar_" .. lane,
+				Size = wideX and Vector3.new(16, 0.6, 0.6) or Vector3.new(0.6, 0.6, 16),
+				Position = Vector3.new(center.X, 12, center.Z),
+				Material = Enum.Material.Metal,
+				BrickColor = BrickColor.new("Dark stone grey"),
+				CanQuery = false,
+				CanTouch = false,
+			})
+			topBar.Parent = decor
 		end
 	end
 end

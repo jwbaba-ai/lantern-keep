@@ -4,6 +4,9 @@
 -- 맵 파트 이름·구조는 MapBuilder가 만든 것을 그대로 쓴다 (Map/Gates/<lane>).
 local GateHighlight = {}
 
+-- 성문 기본 투명도 (색이 비치는 철창문). 깜빡임이 꺼지면 이 값으로 돌아간다.
+GateHighlight.BASE_TRANSPARENCY = 0.8
+
 local generation = 0
 
 local function setGateTransparency(map, lane, value)
@@ -20,7 +23,7 @@ local function blinkLoop(map, lane, count, token, isFirst)
 	if isFirst then
 		interval = math.max(0.25, interval * 0.7)
 	end
-	local onTransparency = isFirst and 0.5 or 0.7
+	local onTransparency = isFirst and 0.1 or 0.35
 	local gates = map:FindFirstChild("Gates")
 	local gate = gates and gates:FindFirstChild(lane)
 	while token == generation do
@@ -35,7 +38,7 @@ local function blinkLoop(map, lane, count, token, isFirst)
 		if gate.Parent == nil then
 			return
 		end
-		gate.Transparency = 0
+		gate.Transparency = GateHighlight.BASE_TRANSPARENCY
 		task.wait(interval)
 	end
 end
@@ -57,7 +60,7 @@ end
 function GateHighlight.stop(map)
 	generation += 1
 	for _, lane in ipairs({ "north", "south", "east", "west" }) do
-		setGateTransparency(map, lane, 0)
+		setGateTransparency(map, lane, GateHighlight.BASE_TRANSPARENCY)
 	end
 end
 

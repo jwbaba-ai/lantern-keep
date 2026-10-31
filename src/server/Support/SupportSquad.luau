@@ -76,6 +76,15 @@ function SupportSquad.koreanRoleName(role)
 	return ROLE_KO[role] or role
 end
 
+-- 몸통·다리 역할 색 (파일 안 지역 표). 머리·팔은 살색이다.
+local ROLE_COLORS = {
+	guardian = Color3.fromRGB(70, 110, 170),
+	ranger = Color3.fromRGB(60, 140, 80),
+	cleric = Color3.fromRGB(235, 235, 225),
+	arcanist = Color3.fromRGB(120, 80, 170),
+}
+local SKIN_COLOR = Color3.fromRGB(234, 200, 160)
+
 -- 생성 자리 규칙. 등불 주위 반지름 6 원 위에 서로 다른 각도로 둔다.
 -- 처음 생길 때는 lanes를 모르니 인원 수로 나눈 자리,
 -- 리스폰 때는 맡은 성문 쪽 자리를 쓴다. 이미 생긴 지원대는
@@ -366,8 +375,17 @@ local function buildModel(bot, choice, map, spawnAt)
 		old:Destroy()
 	end
 	bot.Character = nil
+	-- 빈 설명에 색을 넣어 적과 구분되게 한다 (검은 실루엣 방지).
+	local desc = Instance.new("HumanoidDescription")
+	desc.HeadColor = SKIN_COLOR
+	desc.LeftArmColor = SKIN_COLOR
+	desc.RightArmColor = SKIN_COLOR
+	local roleColor = ROLE_COLORS[bot.role] or SKIN_COLOR
+	desc.TorsoColor = roleColor
+	desc.LeftLegColor = roleColor
+	desc.RightLegColor = roleColor
 	local model = Players:CreateHumanoidModelFromDescription(
-		Instance.new("HumanoidDescription"),
+		desc,
 		Enum.HumanoidRigType.R15
 	)
 	model.Name = bot.Name
@@ -383,12 +401,14 @@ local function buildModel(bot, choice, map, spawnAt)
 	end
 	-- 파(각개전투파·협력파)는 투표 결과로 이미 보이니 이름표에는 역할만 남긴다.
 	local display = SupportSquad.koreanRoleName(bot.role)
+	-- 이름표 높이를 봇 번호에 따라 나눈다 (함께 다녀도 겹치지 않게).
+	local botNumber = tonumber(string.match(bot.Name or "", "%d+$")) or 1
 	local root = model:FindFirstChild("HumanoidRootPart")
 	if root then
 		Labels.attach(model, root, {
 			text = string.format("지원대 · %s", display),
 			maxDistance = 50,
-			offset = Vector3.new(0, 4, 0),
+			offset = Vector3.new(0, 4 + (botNumber - 1) * 1.3, 0),
 		})
 	end
 	for _, part in ipairs(model:GetDescendants()) do

@@ -196,4 +196,13 @@ do
 	check("allowed_numbers_keep_ai", t == "Day 2 북문부터 함께해요!" and ai == true)
 end
 
+-- 18. 이름에 숫자가 있어도 AI 대사를 버리지 않는다.
+do
+	local okFilter = function(text)
+		return text
+	end
+	local t, ai = NpcSpeech.resolveLine("P1님 함께해요!", "기본 대사", okFilter, { P1 = "player7" }, 1)
+	check("numbered_name_keeps_ai", t == "player7님 함께해요!" and ai == true)
+end
+
 return results

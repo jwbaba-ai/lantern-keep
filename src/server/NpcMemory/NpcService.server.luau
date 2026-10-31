@@ -101,8 +101,8 @@ local function buildMira(body)
 end
 
 local NPCS = {
-	{ key = "bram", title = "Bram · 노장 대장", offset = Vector3.new(12, 0, 8), color = "Dark stone grey", material = Enum.Material.Metal },
-	{ key = "mira", title = "Mira · 견습 치유사", offset = Vector3.new(-12, 0, 8), color = "White", material = Enum.Material.SmoothPlastic },
+	{ key = "bram", title = "Bram · 노장 대장", offset = Vector3.new(18, 0, 14), color = "Dark stone grey", material = Enum.Material.Metal },
+	{ key = "mira", title = "Mira · 견습 치유사", offset = Vector3.new(-18, 0, 14), color = "White", material = Enum.Material.SmoothPlastic },
 }
 local LINES_KEY = { bram = "bram_lines", mira = "mira_lines" }
 

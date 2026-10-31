@@ -18,3 +18,5 @@ Rules:
 - Mention the Day number when it helps (e.g. Day 2).
 - The lines are spoken at the start of the NEXT match. If you mention a Day, use the latest event's next_day, never its day.
 - If support_squad is solo or coop, you may mention it by its Korean name (각개전투파 / 협력파).
+- Never say damage, revive or death counts as numbers. Describe them in words (e.g. "가장 강하게 싸운", "두 번 일으켜 준"). The only digits allowed in a line are Day numbers and wave numbers ("Day 2", "3웨이브").
+- Write natural Korean with correct particles, for example 남문과, 북문을. Every line must make sense when read alone.

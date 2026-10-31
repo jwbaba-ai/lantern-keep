@@ -231,6 +231,10 @@ local function say(npcKey, lineIndex)
 	if isAI and NpcSpeech.dayMismatch(text, day) then
 		text, isAI = defaultLine, false
 	end
+	-- 숫자 안전망: 저장된 옛 AI 대사의 damage 같은 숫자를 기본 대사로 바꾼다.
+	if isAI and NpcSpeech.hasStrayNumber(text) then
+		text, isAI = defaultLine, false
+	end
 	npcSayEvent:FireAllClients({ npc = npcKey, text = text, isAI = isAI })
 end
 

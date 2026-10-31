@@ -164,4 +164,36 @@ do
 	check("day_match_keeps_ai", mismatch == false)
 end
 
+-- 15. 뜻 모를 숫자 대사는 기본 대사로 바뀐다.
+do
+	local okFilter = function(text)
+		return text
+	end
+	local t1, ai1 = NpcSpeech.resolveLine("마지막까지 100 피해 힘내주세요!", "기본 대사", okFilter, { P1 = "Bob" }, 1)
+	local t2, ai2 = NpcSpeech.resolveLine("마지막 파도, 280 힘처럼 함께해요!", "기본 대사", okFilter, { P1 = "Bob" }, 1)
+	check(
+		"stray_number_uses_default",
+		t1 == "기본 대사" and ai1 == false and t2 == "기본 대사" and ai2 == false
+	)
+end
+
+-- 16. Day·웨이브·P번호 숫자는 그대로 통과한다.
+do
+	check(
+		"allowed_numbers_pass",
+		NpcSpeech.hasStrayNumber("Day 2 북문부터") == false
+			and NpcSpeech.hasStrayNumber("3웨이브 승리") == false
+			and NpcSpeech.hasStrayNumber("P1님") == false
+	)
+end
+
+-- 17. 허용 숫자 대사는 resolveLine을 통과한다.
+do
+	local okFilter = function(text)
+		return text
+	end
+	local t, ai = NpcSpeech.resolveLine("Day 2 북문부터 함께해요!", "기본 대사", okFilter, { P1 = "Bob" }, 1)
+	check("allowed_numbers_keep_ai", t == "Day 2 북문부터 함께해요!" and ai == true)
+end
+
 return results

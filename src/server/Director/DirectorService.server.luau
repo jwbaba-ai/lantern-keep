@@ -42,6 +42,9 @@ local NPC_SAVE_TIMEOUT = 25 -- 서버 종료 시 기억 저장을 기다리는 �
 
 -- 경기 종료 처리(요약 + 저장)가 진행 중이면 true. BindToClose가 보고 기다린다.
 local npcSaveInProgress = false
+-- 다음 Day 첫 웨이브 요청 결과. 경기가 끝난 뒤 task.spawn으로 미리 받아 둔다.
+-- 다음 runMatch 시작 때 한 번만 읽고 바로 nil로 지운다 (늦은 응답이 그다음 판에 쓰이지 않게).
+local firstWaveRequest = nil
 game:BindToClose(function()
 	local waited = 0
 	while npcSaveInProgress and waited < NPC_SAVE_TIMEOUT do
@@ -360,6 +363,25 @@ local function publishResult(day, totalWaves, wavesCompleted, source, result, en
 	})
 end
 
+-- 대기·Day 요약용 명단 (사람 + 지원대). 로비 종료 뒤에 부른다.
+local function buildRoster()
+	local roster = {}
+	for _, player in ipairs(Players:GetPlayers()) do
+		table.insert(roster, {
+			userId = player.UserId,
+			role = player:GetAttribute("Class") or "guardian",
+		})
+	end
+	for _, bot in ipairs(SupportSquad.getBots()) do
+		table.insert(roster, {
+			userId = bot.UserId,
+			role = bot.role,
+			support = true,
+		})
+	end
+	return roster
+end
+
 -- 경기 한 판: 로비 -> 웨이브 -> 결과 -> 기억 저장 -> 결과 화면 -> 초기화.
 -- 플레이어의 직업은 판이 바뀌어도 유지하고, 다시 고르지 않는다.
 -- day: 이번 판의 Day 번호. 웨이브 수는 DayRules.waveCount(day)로 정한다.
@@ -463,9 +485,22 @@ local function runMatch(matchNumber, day)
 	-- 판 번호: NpcService가 바뀔 때마다 기억을 다시 불러와 다음 판 인사를 준비한다.
 	ReplicatedStorage:SetAttribute("MatchNumber", matchNumber)
 
+	-- 첫 판(서버 시작 직후)은 지난 판 요약이 없어 대체 웨이브 그대로다.
+	-- 앞 판이 받아 둔 요청이 있으면 한 번만 읽고 바로 지운다.
 	local currentPlan = FallbackWaves[1]
 	local currentSource = "fallback"
+	do
+		local req = firstWaveRequest
+		firstWaveRequest = nil
+		if req ~= nil and req.plan ~= nil then
+			currentPlan = req.plan
+			currentSource = "muse"
+		end
+	end
 	local wavesCompleted = 0
+	-- 마지막으로 진행한 웨이브의 통계·계획. 경기 끝 뒤 다음 Day 첫 웨이브 요약에 쓴다.
+	local lastTracker = nil
+	local lastWavePlan = nil
 
 	for wave = 1, totalWaves do
 		if fastMatchRequested() then
@@ -509,6 +544,8 @@ local function runMatch(matchNumber, day)
 		})
 
 		local tracker = playWave(map, lantern, wave, playPlan, dayHealthMult, bossLane)
+		lastTracker = tracker
+		lastWavePlan = currentPlan
 		-- 패배한 웨이브는 완료로 세지 않는다 (결과 화면·NPC 기억이 함께 고쳐진다).
 		wavesCompleted = completedAfterWave(wavesCompleted, wave, lanternHealth(lantern))
 
@@ -524,20 +561,7 @@ local function runMatch(matchNumber, day)
 		end
 
 		-- 대기 시작과 동시에 다음 웨이브 요청 (전투 중 호출 금지: 웨이브 사이만).
-		local roster = {}
-		for _, player in ipairs(Players:GetPlayers()) do
-			table.insert(roster, {
-				userId = player.UserId,
-				role = player:GetAttribute("Class") or "guardian",
-			})
-		end
-		for _, bot in ipairs(SupportSquad.getBots()) do
-			table.insert(roster, {
-				userId = bot.UserId,
-				role = bot.role,
-				support = true,
-			})
-		end
+		local roster = buildRoster()
 		local summary = MatchStats.buildSummary(tracker, wave, lanternHealthPct(lantern), {
 			tactic = currentPlan.tactic,
 			event = currentPlan.event,
@@ -670,6 +694,42 @@ local function runMatch(matchNumber, day)
 
 	-- 1. 결과 알림 (카운트다운 끝 시각은 저장 뒤에 확정한다).
 	publishResult(day, totalWaves, wavesCompleted, currentSource, result, 0)
+	-- 다음 Day 첫 웨이브 미리 요청. wave = 0은 "다음 Day가 아직 시작 전"이라는 뜻이다.
+	-- 결과 화면을 기다리게 하지 않는다 (task.spawn).
+	-- 실패(타임아웃·HTTP 오류·잘못된 JSON·검증 실패)는 warn만 남기고 대체 웨이브로 간다.
+	if lastTracker ~= nil and #Players:GetPlayers() >= 1 then
+		local nextDay = day
+		if result == "victory" then
+			nextDay = day + 1
+		end
+		local nextTotal = DayRules.waveCount(nextDay)
+		local summary = MatchStats.buildSummary(
+			lastTracker,
+			0,
+			lanternHealthPct(lantern),
+			{ tactic = lastWavePlan.tactic, event = lastWavePlan.event },
+			buildRoster(),
+			nextDay,
+			nextTotal,
+			supportChoice
+		)
+		local req = {}
+		firstWaveRequest = req
+		task.spawn(function()
+			local requested = DirectorClient.requestNextWave(summary)
+			if requested then
+				local ok, clean, errs = WaveValidator.validate(requested, 1)
+				if ok and clean then
+					req.plan = clean
+					for _, e in ipairs(errs) do
+						warn("[Director] wave=1 auto-fix: " .. e)
+					end
+				else
+					warn("[Director] wave=1 plan rejected: " .. table.concat(errs, " / "))
+				end
+			end
+		end)
+	end
 	-- 판 끝: 지원대를 모두 지운다. 다음 로비 투표 결과로 다시 만든다.
 	-- 실패해도 결과 화면·다음 판으로 계속 간다.
 	local okClear, clearErr = pcall(SupportSquad.clearMatch)

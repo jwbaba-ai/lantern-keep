@@ -1,0 +1,38 @@
+{
+  "support_squad": "solo",
+  "day": 2,
+  "wave": 0,
+  "total_waves": 5,
+  "waves_left": 5,
+  "lantern_health_pct": 62,
+  "breached_lane": "south",
+  "revives": 1,
+  "players": [
+    {
+      "role": "arcanist",
+      "damage": 1100,
+      "deaths": 1,
+      "support": true
+    },
+    {
+      "role": "cleric",
+      "damage": 250,
+      "deaths": 0,
+      "support": true
+    },
+    {
+      "role": "guardian",
+      "damage": 900,
+      "deaths": 0
+    },
+    {
+      "role": "ranger",
+      "damage": 1600,
+      "deaths": 0
+    }
+  ],
+  "previous_wave": {
+    "tactic": "focus_weak_lane",
+    "event": "none"
+  }
+}

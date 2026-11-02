@@ -125,6 +125,7 @@ local function buildMap()
 			Position = Vector3.new(gatePos.X, 6, gatePos.Z),
 			BrickColor = BrickColor.new(GATE_COLORS[lane]),
 			Transparency = 0.8,
+			CanQuery = false,
 		})
 		gate.Parent = gates
 		addGateLabel(gate, lane)
@@ -175,6 +176,7 @@ if gatesFolder then
 			addGateLabel(gate, lane)
 			if gate:IsA("BasePart") then
 				gate.Transparency = 0.8
+				gate.CanQuery = false
 			end
 		end
 	end

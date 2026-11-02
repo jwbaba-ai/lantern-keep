@@ -46,7 +46,7 @@ wave ends → MatchStats summary → Muse Spark (JSON schema, strict)
           → pass: play the AI wave  |  fail / timeout / bad JSON: play a fallback wave
 ```
 
-The match never stops. Any timeout, HTTP error, invalid JSON or rule violation plays a predefined fallback wave instead.
+The match never stops. Any timeout, HTTP error, invalid JSON or rule violation plays a predefined fallback wave instead. The first wave of each later Day is designed from how the previous Day ended.
 
 - Schema (single source of truth): [schemas/wave_plan.schema.json](schemas/wave_plan.schema.json)
 - Prompt (shared by the game and the PC test tools): [src/server/Director/prompt.txt](src/server/Director/prompt.txt)

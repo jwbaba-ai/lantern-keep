@@ -154,6 +154,7 @@ local function buildMap()
 				Size = Vector3.new(2, 2, 2),
 				Position = pos,
 				Transparency = 1,
+				CanQuery = false,
 			})
 			wp.Parent = laneFolder
 		end
@@ -177,6 +178,20 @@ if gatesFolder then
 			if gate:IsA("BasePart") then
 				gate.Transparency = 0.8
 				gate.CanQuery = false
+			end
+		end
+	end
+end
+-- 이미 저장된 맵의 웨이포인트도 사격 판정에서 뺀다. 폴더가 없으면 건너뛴다.
+local lanesFolder = map:FindFirstChild("Lanes")
+if lanesFolder then
+	for _, lane in ipairs(Config.Lanes) do
+		local laneFolder = lanesFolder:FindFirstChild(lane)
+		if laneFolder then
+			for _, child in ipairs(laneFolder:GetChildren()) do
+				if child:IsA("BasePart") then
+					child.CanQuery = false
+				end
 			end
 		end
 	end

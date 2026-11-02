@@ -5,14 +5,15 @@
 local Labels = {}
 
 -- opts: text(표시 글자), maxDistance, alwaysOnTop,
---   offset(StudsOffsetWorldSpace, 기본 몸체 위 +4).
+--   offset(StudsOffsetWorldSpace, 기본 몸체 위 +4),
+--   size(없으면 140x24 픽셀 고정).
 -- 돌려값: 만든 BillboardGui.
 function Labels.attach(parent, adornee, opts)
 	opts = opts or {}
 	local tag = Instance.new("BillboardGui")
 	tag.Name = "Nameplate"
 	tag.Adornee = adornee
-	tag.Size = UDim2.new(0, 140, 0, 24)
+	tag.Size = opts.size or UDim2.new(0, 140, 0, 24)
 	tag.StudsOffsetWorldSpace = opts.offset or Vector3.new(0, 4, 0)
 	tag.MaxDistance = opts.maxDistance or 60
 	tag.AlwaysOnTop = opts.alwaysOnTop or false

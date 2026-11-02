@@ -407,7 +407,8 @@ local function buildModel(bot, choice, map, spawnAt)
 	if root then
 		Labels.attach(model, root, {
 			text = string.format("지원대 · %s", display),
-			maxDistance = 50,
+			size = UDim2.fromScale(5, 1.1),
+			maxDistance = 40,
 			offset = Vector3.new(0, 4 + (botNumber - 1) * 1.3, 0),
 		})
 	end

@@ -3,6 +3,7 @@
 -- 30% 이하면 붉게 깜빡인다.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -25,6 +26,41 @@ frame.Size = UDim2.new(0, 220, 0, 44)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 frame.BackgroundTransparency = 0.25
 frame.Parent = gui
+
+-- 등불이 맞을 때 화면 전체에 깔리는 붉은 프레임 (별도 ScreenGui, 입력을 막지 않는다).
+local flashGui = Instance.new("ScreenGui")
+flashGui.Name = "LanternDamageFlash"
+flashGui.ResetOnSpawn = false
+flashGui.IgnoreGuiInset = true
+flashGui.Parent = player:WaitForChild("PlayerGui")
+
+local flashFrame = Instance.new("Frame")
+flashFrame.Size = UDim2.new(1, 0, 1, 0)
+flashFrame.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
+flashFrame.BackgroundTransparency = 1
+flashFrame.BorderSizePixel = 0
+flashFrame.Active = false
+flashFrame.Visible = false
+flashFrame.Parent = flashGui
+
+-- 진행 중에 또 맞으면 처음부터 다시 시작한다 (토큰이 바뀌면 끝난 뒤 숨기지 않는다).
+local flashToken = 0
+local function flashRed()
+	flashToken += 1
+	local token = flashToken
+	flashFrame.Visible = true
+	flashFrame.BackgroundTransparency = 0.75
+	TweenService:Create(
+		flashFrame,
+		TweenInfo.new(0.4, Enum.EasingStyle.Linear),
+		{ BackgroundTransparency = 1 }
+	):Play()
+	task.delay(0.4, function()
+		if token == flashToken then
+			flashFrame.Visible = false
+		end
+	end)
+end
 
 -- 휴대폰 배율: 화면이 바뀌면(회전) 다시 맞춘다.
 local frameScale = Instance.new("UIScale")
@@ -100,9 +136,14 @@ while lantern == nil do
 end
 
 local lowHealth = false
+local lastHp = nil
 
 local function render()
 	local hp = lantern:GetAttribute("Health") or MAX_HEALTH
+	if lastHp ~= nil and hp < lastHp then
+		flashRed()
+	end
+	lastHp = hp
 	local pct = math.clamp(hp / MAX_HEALTH, 0, 1)
 	fill.Size = UDim2.new(pct, 0, 1, 0)
 	lowHealth = pct <= LOW_PCT

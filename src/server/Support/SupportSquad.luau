@@ -41,6 +41,12 @@ end
 
 local SupportSquad = {}
 
+-- 처치된 몸체는 0.15초 뒤에 지워진다. 그 사이 산 적처럼 다루지 않게
+-- 체력이 0 이하면 죽은 몸체로 본다.
+local function isAlive(body)
+	return (body:GetAttribute("Health") or 0) > 0
+end
+
 local COHESION_OFFSETS = {
 	Vector3.new(3, 0, 0),
 	Vector3.new(-3, 0, 0),
@@ -510,7 +516,7 @@ local function nearestEnemy(pos, range)
 	end
 	local best, bestDist = nil, nil
 	for _, body in ipairs(folder:GetChildren()) do
-		if body:IsA("BasePart") then
+		if body:IsA("BasePart") and isAlive(body) then
 			local d = (body.Position - pos).Magnitude
 			if d <= range and (bestDist == nil or d < bestDist) then
 				best, bestDist = body, d
@@ -653,7 +659,7 @@ local function chosenEnemyPart(botPos, range, assignedLane)
 	end
 	local list = {}
 	for _, body in ipairs(folder:GetChildren()) do
-		if body:IsA("BasePart") then
+		if body:IsA("BasePart") and isAlive(body) then
 			table.insert(list, { pos = body.Position, lane = enemyLaneOf(body), body = body })
 		end
 	end
@@ -749,7 +755,7 @@ local function busiestLiveLane()
 	local folder = Workspace:FindFirstChild("Enemies")
 	if folder then
 		for _, body in ipairs(folder:GetChildren()) do
-			local lane = body:IsA("BasePart") and body:GetAttribute("Lane") or nil
+			local lane = body:IsA("BasePart") and isAlive(body) and body:GetAttribute("Lane") or nil
 			if lane and counts[lane] ~= nil then
 				counts[lane] += 1
 			end

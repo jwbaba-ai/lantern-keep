@@ -17,6 +17,12 @@ local ARCHER_DAMAGE = 8
 local SHAMAN_RANGE = 15
 local SHAMAN_HEAL = 20
 
+-- 처치된 몸체는 0.15초 뒤에 지워진다. 그 사이 산 적처럼 다루지 않게
+-- 체력이 0 이하면 죽은 몸체로 본다.
+local function isAlive(body)
+	return (body:GetAttribute("Health") or 0) > 0
+end
+
 local function playerRoot(player)
 	local character = player.Character
 	return character and character:FindFirstChild("HumanoidRootPart")
@@ -39,7 +45,7 @@ while true do
 		continue
 	end
 	for _, body in ipairs(folder:GetChildren()) do
-		if not body:IsA("BasePart") then
+		if not body:IsA("BasePart") or not isAlive(body) then
 			continue
 		end
 		local enemyType = body:GetAttribute("EnemyType")
@@ -68,7 +74,7 @@ while true do
 			end
 		elseif enemyType == "Shaman" and tick % 3 == 0 then
 			for _, other in ipairs(folder:GetChildren()) do
-				if other:IsA("BasePart") and other ~= body then
+				if other:IsA("BasePart") and other ~= body and isAlive(other) then
 					if (other.Position - body.Position).Magnitude <= SHAMAN_RANGE then
 						local maxHp = EnemyCatalog[other:GetAttribute("EnemyType")]
 						maxHp = maxHp and maxHp.Health or 0

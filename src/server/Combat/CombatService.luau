@@ -43,6 +43,12 @@ function CombatService.endWave()
 	currentTracker = nil
 end
 
+-- 처치된 몸체는 0.15초 뒤에 지워진다. 그 사이 산 적처럼 다루지 않게
+-- 체력이 0 이하면 죽은 몸체로 본다.
+local function isAlive(body)
+	return (body:GetAttribute("Health") or 0) > 0
+end
+
 local function isEnemyPart(inst)
 	local enemies = Workspace:FindFirstChild("Enemies")
 	while inst do
@@ -61,7 +67,7 @@ local function enemiesInRadius(center, radius)
 		return out
 	end
 	for _, body in ipairs(enemies:GetChildren()) do
-		if body:IsA("BasePart") and (body.Position - center).Magnitude <= radius then
+		if body:IsA("BasePart") and isAlive(body) and (body.Position - center).Magnitude <= radius then
 			table.insert(out, body)
 		end
 	end

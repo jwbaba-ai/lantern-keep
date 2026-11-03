@@ -23,7 +23,7 @@ mark.Name = "Target"
 mark.FillTransparency = 1
 mark.OutlineColor = Color3.fromRGB(255, 220, 60)
 mark.OutlineTransparency = 0
-mark.DepthMode = Enum.DepthMode.Occluded
+mark.DepthMode = Enum.HighlightDepthMode.Occluded
 mark.Enabled = false
 mark.Parent = gui
 

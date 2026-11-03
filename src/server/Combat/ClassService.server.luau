@@ -49,6 +49,22 @@ local function giveTool(player, classKey)
 	tool.ToolTip = ClassCatalog[classKey].Description
 	tool:SetAttribute("ClassTool", true)
 	tool.Parent = player.Backpack
+	return tool
+end
+
+-- 직업 Tool을 바로 들게 한다. Humanoid가 없으면 가방에만 둔다.
+local function equipTool(player, tool)
+	if tool == nil or tool.Parent == nil then
+		return
+	end
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+	pcall(function()
+		humanoid:EquipTool(tool)
+	end)
 end
 
 local function applyHealth(player, classKey)
@@ -69,7 +85,7 @@ local function assignClass(player, classKey)
 	end
 	player:SetAttribute("Class", classKey)
 	applyHealth(player, classKey)
-	giveTool(player, classKey)
+	equipTool(player, giveTool(player, classKey))
 end
 
 chooseEvent.OnServerEvent:Connect(function(player, classKey)
@@ -90,9 +106,18 @@ local function hookPlayer(player)
 	player.CharacterAdded:Connect(function()
 		local classKey = player:GetAttribute("Class")
 		if classKey and ClassCatalog[classKey] then
-			-- Humanoid가 준비될 시간을 주기 위해 한 박자 늦게 적용한다.
-			task.defer(applyHealth, player, classKey)
-			task.defer(giveTool, player, classKey)
+			-- Humanoid가 준비될 때까지 기다렸다가 체력·Tool·장착을 적용한다.
+			task.defer(function()
+				local character = player.Character
+				if character then
+					character:WaitForChild("Humanoid", 5)
+				end
+				if player.Parent == nil then
+					return
+				end
+				applyHealth(player, classKey)
+				equipTool(player, giveTool(player, classKey))
+			end)
 		end
 	end)
 	task.delay(AUTO_PICK_SECONDS, function()

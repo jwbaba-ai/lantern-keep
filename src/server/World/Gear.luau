@@ -82,8 +82,8 @@ function builders.guardian(model)
 	if handR then
 		local hy = handR.Size.Y
 		add(handR, {
-			Name = "Sword", Size = Vector3.new(0.22, 2.4, 0.22),
-			Offset = CFrame.new(0, -(hy / 2 + 1.1), 0),
+			Name = "Sword", Size = Vector3.new(0.22, 1.6, 0.22),
+			Offset = CFrame.new(0, -(hy / 2 + 0.75), 0),
 			Material = Enum.Material.Metal, BrickColor = METAL_LIGHT,
 		})
 		add(handR, {

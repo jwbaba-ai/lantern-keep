@@ -22,7 +22,7 @@
 | 1:35–1:50 | **NPC 기억 ①:** 결과 화면 "Bram과 Mira가 이번 판을 기억합니다", 초상화 | A 2:00–2:10 | After each match, the party's in-game events are saved, and Muse Spark turns them into memories. |
 | 1:50–2:10 | **NPC 기억 ②:** Day 2 시작 AI 대사 "Day 2에서 만나니 반갑다 … 협력파여", 웨이브 중 대사 "1웨이브를 막아내자 동문과 남문을 보라", "AI가 생성한 대사입니다" | A 2:31–2:40, A 2:58–3:02 | Next match, Bram and Mira bring it up: the day, the squad you chose, the gates you held. Every line is labeled as AI-generated. |
 | 2:10–2:22 | **Muse Image:** Bram·Mira·보스 초상화, 이벤트 배너 5장을 나란히 | `assets/images/portrait_*.png`, `banner_*.png` | Portraits and event banners were made with Muse Image during development — no runtime image generation. |
-| 2:22–2:38 | **안전장치:** 흐름 그림 ★ + 짧은 장면(대체 웨이브 배너 "기본 웨이브") | README의 흐름 그림 화면 녹화, B 0:00–0:05 | The match never stops: timeouts, bad JSON or rule breaks fall back to a prebuilt wave. AI text is filtered, labeled, and models are only called between waves. |
+| 2:22–2:38 | **안전장치:** 흐름 그림 ★ + 짧은 장면(대체 웨이브 배너 "기본 웨이브") | README의 흐름 그림 화면 녹화 (대체 웨이브 배너 장면은 Day 1 웨이브 1 배너에서 찾되, 확인 못 했으면 빼도 된다) | The match never stops: timeouts, bad JSON or rule breaks fall back to a prebuilt wave. AI text is filtered, labeled, and models are only called between waves. |
 | 2:38–2:50 | **만든 방법:** 역할 표 ★ | README "How it was built" 화면 녹화 | Built solo in the hackathon window: Muse Code wrote the game, Claude Code wrote daily specs, reviewed and tested in Studio. |
 | 2:50–3:00 | **끝:** 등불 앞 전투 한 컷 + 링크 | A 1:48–1:57 + 글자 | Play on Roblox · github.com/jwbaba-ai/lantern-keep |
 

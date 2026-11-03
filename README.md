@@ -4,8 +4,8 @@ A 1–4 player co-op castle defense game on Roblox. An **AI director** reads how
 
 Built for the Meta Global AI Developer Hackathon (indie developer track). Everything in this repository was made during the build period (see [docs/ORIGINS.md](docs/ORIGINS.md)).
 
-- Play: https://www.roblox.com/games/83779357358291 <!-- TODO: confirm the experience is public before submission -->
-- Demo video (3 min): TODO
+- Play: https://www.roblox.com/games/83779357358291 (ages 16+ under Roblox's content rating)
+- Demo video (2 min): https://youtu.be/Eo5MEwkh_OE
 
 ## The game
 

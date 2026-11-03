@@ -10,6 +10,7 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ClassCatalog = require(Shared:WaitForChild("ClassCatalog"))
+local AutoTarget = require(Shared:WaitForChild("AutoTarget"))
 
 local CombatFolder = script.Parent
 local MatchStats = require(CombatFolder.Parent:WaitForChild("Director"):WaitForChild("MatchStats"))
@@ -107,9 +108,9 @@ local function dealDamage(attacker, body, amount)
 	end
 end
 
-local function guardianAttack(attacker, root, _aim)
+local function guardianAttack(attacker, root, _aim, facingOverride)
 	local spec = ClassCatalog.guardian
-	local facing = root.CFrame.LookVector
+	local facing = facingOverride or root.CFrame.LookVector
 	for _, body in ipairs(enemiesInRadius(root.Position, spec.Radius)) do
 		local dir = body.Position - root.Position
 		if dir.Magnitude > 0.01 and facing:Dot(dir.Unit) > 0 then
@@ -274,7 +275,8 @@ end
 
 -- 공격자(플레이어·지원대)의 직업 공격 1회. 쿨다운 검사를 함께 한다.
 -- 플레이어 RemoteEvent 경로와 지원대 행동 루프가 같은 함수를 쓴다.
-function CombatService.performAttack(attacker, classKey, root, aim)
+-- facingOverride: guardian 자동 조준 방향(선택, 없으면 LookVector).
+function CombatService.performAttack(attacker, classKey, root, aim, facingOverride)
 	local spec = ClassCatalog[classKey]
 	if not spec then
 		return
@@ -288,7 +290,7 @@ function CombatService.performAttack(attacker, classKey, root, aim)
 		return
 	end
 	CombatService.markAttacked(userId, now)
-	ATTACKERS[classKey](attacker, root, CombatService.resolveAim(classKey, root.Position, aim))
+	ATTACKERS[classKey](attacker, root, CombatService.resolveAim(classKey, root.Position, aim), facingOverride)
 end
 
 attackEvent.OnServerEvent:Connect(function(player, aim)
@@ -306,8 +308,34 @@ attackEvent.OnServerEvent:Connect(function(player, aim)
 	if not root or not humanoid or humanoid.Health <= 0 then
 		return
 	end
+	-- 플레이어 경로에서만 자동 조준을 쓴다. 지원대는 지금 목표 선택을 그대로 둔다.
+	local aimPoint = aim
+	local facingOverride = nil
+	if classKey == "ranger" or classKey == "arcanist" or classKey == "guardian" then
+		local list = {}
+		local enemies = Workspace:FindFirstChild("Enemies")
+		if enemies then
+			for _, body in ipairs(enemies:GetChildren()) do
+				if body:IsA("BasePart") and isAlive(body) then
+					table.insert(list, { pos = body.Position, ref = body })
+				end
+			end
+		end
+		local picked = AutoTarget.pick(classKey, root.Position, aim, list)
+		if picked then
+			if classKey == "guardian" then
+				local dir = picked.pos - root.Position
+				dir = Vector3.new(dir.X, 0, dir.Z)
+				if dir.Magnitude > 0.01 then
+					facingOverride = dir.Unit
+				end
+			else
+				aimPoint = picked.pos
+			end
+		end
+	end
 	-- 쿨다운 검증은 performAttack이 맡는다.
-	CombatService.performAttack(player, classKey, root, aim)
+	CombatService.performAttack(player, classKey, root, aimPoint, facingOverride)
 end)
 
 -- 사망 기록 (리스폰은 기본 리스폰을 그대로 쓴다).

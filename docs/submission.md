@@ -2,6 +2,36 @@
 
 양식 칸 이름은 행사 페이지에 맞춰 골라 쓴다. 칸이 없으면 건너뛴다.
 
+## 실제 양식 칸 → 넣을 내용 (2026-11-04 확인)
+| 양식 칸 | 넣을 내용 |
+|---|---|
+| Team Name* | Lantern Keep (또는 사람이 정한 이름) |
+| Team Members | 본인 1명 (이미 들어 있음) |
+| Track* | Indie Developer Track |
+| Problem statement* | Build for Your World |
+| Most Viral (X 링크) | X에 올렸으면 그 링크, 아니면 비움 |
+| Project Description* | 아래 "Description" |
+| Public GitHub Repository* | https://github.com/jwbaba-ai/lantern-keep |
+| 3-Minute Demo Video* | https://youtu.be/Eo5MEwkh_OE |
+| Describe your use of Meta products* | 아래 "Use of Meta products (form)" |
+| Why are Meta's models important* | 아래 "Why Meta's models (form)" |
+| 파트너 기술 피드백 | 파트너(Baseten·Modal·Fireworks)를 쓰지 않았으면 "We did not use partner inference; all calls went to the Meta Model API." |
+| 만족도·추천·비교·선택 기준 설문 | **사람이 자기 의견으로 답한다** |
+| 가장 큰 장애물 | 아래 "Biggest obstacle (form)" 참고, 사람이 고쳐 쓴다 |
+| 자료 사용 동의 | **사람이 읽고 직접 동의한다** |
+
+## Use of Meta products (form)
+- Muse Spark 1.3 (Meta Model API) runs the AI director: once per intermission it reads a match summary and returns the next wave as strict JSON (enemies per gate, tactic, event, director note). A validator checks every field, and any failure plays a fallback wave.
+- Muse Spark 1.3 also runs NPC memory: once per match end it turns the party's in-game events into memories and next-match lines for two companions, Bram and Mira. Lines are filtered and labeled as AI-generated.
+- Muse Image made the companion portraits, the boss portrait and five event banners during development; they ship as Roblox assets.
+- Muse Code implemented the game code and the PC evaluation tools from daily written specs; the specs, reviews and test logs are in the repository.
+
+## Why Meta's models (form)
+The whole point of Lantern Keep is a world that reacts to the people playing it, and that needs a model that can read a messy match summary and make a game-design decision in a few seconds. Muse Spark's strict JSON-schema output let the director's plans go straight into the game after a validator check, with zero match-breaking outputs in our tests (32/32 valid). The same model writes short, in-character companion lines from the party's history, so one model family covers both the planning and the storytelling. Muse Image gave a solo developer portraits and banners that match the game's look, and Muse Code let one person ship a full co-op game in ten days.
+
+## Biggest obstacle (form)
+Keeping model calls from ever blocking a live match. Every path (timeout, HTTP error, invalid JSON, rule break) needed a tested fallback. The hardest case appeared only on the live server: memory summaries took 17–25 s against a 15 s timeout, so every summary failed. Lowering reasoning effort for that call to minimal and giving it its own token and time budget brought it to 8–11 s.
+
 ## Links
 - Repository: https://github.com/jwbaba-ai/lantern-keep
 - Demo video: https://youtu.be/Eo5MEwkh_OE

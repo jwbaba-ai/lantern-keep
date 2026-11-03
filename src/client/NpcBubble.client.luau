@@ -305,8 +305,28 @@ npcSay.OnClientEvent:Connect(function(payload)
 	local delay = math.max(voteDelay, textDelay)
 	if delay > 0 then
 		task.delay(delay, function()
-			showDialog(payload.npc, payload.text, payload.isAI == true)
-			showDot(payload.npc)
+			-- 큰 글자가 미뤄져 있으면 WaveTextUntil이 뒤늦게 잡힌다.
+			-- showDialog 직전에 다시 읽고, 아직 뒤면 한 번만 더 미룬다.
+			local extra = 0
+			pcall(function()
+				local untilAt = player:GetAttribute("WaveTextUntil")
+				if type(untilAt) ~= "number" then
+					return
+				end
+				local remain = untilAt - Workspace:GetServerTimeNow()
+				if remain > 0 then
+					extra = remain + 0.1
+				end
+			end)
+			if extra > 0 then
+				task.delay(extra, function()
+					showDialog(payload.npc, payload.text, payload.isAI == true)
+					showDot(payload.npc)
+				end)
+			else
+				showDialog(payload.npc, payload.text, payload.isAI == true)
+				showDot(payload.npc)
+			end
 		end)
 	else
 		showDialog(payload.npc, payload.text, payload.isAI == true)

@@ -131,6 +131,14 @@ local function deferShow()
 		end
 	end)
 	if delay > 0 then
+		-- 미룬 큰 글자가 뜰 끝 시각을 미리 알린다. 대사가 도착하는 순간에는
+		-- WaveTextUntil이 아직 없을 수 있어 대화창이 먼저 뜨고 겹치기 때문이다.
+		-- 실제로 보이면 showLines가 다시 넣고, phase가 바뀌어 안 보이면
+		-- 늦어도 2.1초 뒤 지난 값이 된다.
+		player:SetAttribute(
+			"WaveTextUntil",
+			Workspace:GetServerTimeNow() + delay + SHOW_SECONDS + HOLD_SECONDS + HIDE_SECONDS
+		)
 		task.delay(delay, function()
 			local ok, current = pcall(HttpService.JSONDecode, HttpService, state.Value)
 			if ok and type(current) == "table" and current.phase == "wave" then

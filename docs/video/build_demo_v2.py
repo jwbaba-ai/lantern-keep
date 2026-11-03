@@ -63,7 +63,14 @@ def subtitle_filters(narration, start, total_dur):
     out = []
     for s in sentences:
         d = total_dur * len(s) / chars
-        out += dt(s, 32, "h-88", enable=f"between(t,{t:.2f},{t + d:.2f})")
+        # 화면 폭을 넘지 않게 70자보다 길면 가운데에 가까운 띄어쓰기에서 두 줄로 나눈다.
+        if len(s) > 70:
+            mid = len(s) // 2
+            cut = min((i for i, c in enumerate(s) if c == " "), key=lambda i: abs(i - mid))
+            text, y = s[:cut] + "\n" + s[cut + 1:], "h-96"
+        else:
+            text, y = s, "h-80"
+        out += dt(text, 32, y, enable=f"between(t,{t:.2f},{t + d:.2f})")
         t += d
     return out
 

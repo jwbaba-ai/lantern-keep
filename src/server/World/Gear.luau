@@ -110,13 +110,13 @@ function builders.ranger(model)
 		add(torso, {
 			Name = "Quiver", Shape = Enum.PartType.Cylinder,
 			Size = Vector3.new(1.8, 0.6, 0.6),
-			Offset = CFrame.new(0.5, 0.2, -(tz / 2 + 0.3)) * CFrame.Angles(0, 0, math.rad(90)),
+			Offset = CFrame.new(0.5, 0.2, tz / 2 + 0.3) * CFrame.Angles(0, 0, math.rad(90)),
 			BrickColor = WOOD,
 		})
 		for _, dx in ipairs({ -0.2, 0, 0.2 }) do
 			add(torso, {
 				Name = "Fletch", Size = Vector3.new(0.15, 0.4, 0.15),
-				Offset = CFrame.new(0.5 + dx, 1.3, -(tz / 2 + 0.3)),
+				Offset = CFrame.new(0.5 + dx, 1.3, tz / 2 + 0.3),
 				BrickColor = BrickColor.new("White"),
 			})
 		end
@@ -166,16 +166,15 @@ function builders.cleric(model)
 	end
 	local handR = baseOf(model, "RightHand")
 	if handR then
-		local hy = handR.Size.Y
 		add(handR, {
 			Name = "Staff", Size = Vector3.new(0.22, 3.4, 0.22),
-			Offset = CFrame.new(0, -(hy / 2 + 1.5), 0),
+			Offset = CFrame.new(0, 1.0, 0),
 			BrickColor = WOOD,
 		})
 		add(handR, {
 			Name = "StaffTip", Shape = Enum.PartType.Ball,
 			Size = Vector3.new(0.55, 0.55, 0.55),
-			Offset = CFrame.new(0, -(hy / 2 + 3.2), 0),
+			Offset = CFrame.new(0, 2.9, 0),
 			Material = Enum.Material.Neon, BrickColor = BrickColor.new("Bright green"),
 		})
 	end
@@ -205,16 +204,15 @@ function builders.arcanist(model)
 	end
 	local handR = baseOf(model, "RightHand")
 	if handR then
-		local hy = handR.Size.Y
 		add(handR, {
 			Name = "Staff", Size = Vector3.new(0.22, 3, 0.22),
-			Offset = CFrame.new(0, -(hy / 2 + 1.3), 0),
+			Offset = CFrame.new(0, 0.9, 0),
 			BrickColor = WOOD,
 		})
 		add(handR, {
 			Name = "StaffTip", Shape = Enum.PartType.Ball,
 			Size = Vector3.new(0.55, 0.55, 0.55),
-			Offset = CFrame.new(0, -(hy / 2 + 2.8), 0),
+			Offset = CFrame.new(0, 2.6, 0),
 			Material = Enum.Material.Neon, BrickColor = BrickColor.new("Bright violet"),
 		})
 	end

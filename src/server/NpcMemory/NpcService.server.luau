@@ -125,9 +125,25 @@ for _, npc in ipairs(NPCS) do
 				hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 			end
 			local groundY = body.Position.Y - body.Size.Y / 2
+			local rayParams = RaycastParams.new()
+			rayParams.FilterType = Enum.RaycastFilterType.Exclude
+			rayParams.FilterDescendantsInstances = { npcsFolder }
+			local rayHit = Workspace:Raycast(
+				body.Position + Vector3.new(0, 5, 0),
+				Vector3.new(0, -20, 0),
+				rayParams
+			)
+			if rayHit then
+				groundY = rayHit.Position.Y
+			end
 			local _, bbox = model:GetBoundingBox()
 			local standPos = Vector3.new(body.Position.X, groundY + bbox.Y / 2, body.Position.Z)
 			model:PivotTo(Figures.faceFlatCFrame(standPos, Vector3.new(0, 0, -1), lantern.Position))
+			for _, part in ipairs(model:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.CanCollide = false
+				end
+			end
 			model.Name = name .. "Avatar"
 			model.Parent = body
 			pcall(Gear.equip, model, npc.key)

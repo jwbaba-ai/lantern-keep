@@ -10,3 +10,5 @@
 | assets/images/banner_boss.png | 신규 | Muse Image로 해커톤 기간 생성 (보스 배너) | day8 |
 | assets/images/icon.png | 신규 | Muse Image로 해커톤 기간 생성 (체험 아이콘, 게임 코드에서 미사용) | day8 |
 | 맵 장식(MapDecor) + NPC·적 외형(기본 파트) | 신규 | 기본 도형·재질·조명만 사용, 해커톤 기간 작성 | day11·day11c |
+| docs/video/build_demo*.py (데모 영상 조립) | 신규 | 해커톤 기간 작성. FFmpeg로 실제 서버 녹화본을 자르고 자막·카드를 넣는다 | 2026-11-04 |
+| 데모 영상 영어 내레이션 (영상 파일 안, 저장소 밖) | 신규 | 대본은 해커톤 기간 작성. 음성은 Edge-TTS(Microsoft 신경망 음성 `en-US-AndrewNeural`)로 합성. 게임 안에서는 쓰지 않는다 | 2026-11-04 |

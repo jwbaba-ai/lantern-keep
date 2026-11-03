@@ -15,6 +15,7 @@ local ClassCatalog = require(Shared:WaitForChild("ClassCatalog"))
 local SupportFolder = script.Parent
 local SupportVote = require(SupportFolder:WaitForChild("SupportVote"))
 local Labels = require(SupportFolder.Parent:WaitForChild("World"):WaitForChild("Labels"))
+local Gear = require(SupportFolder.Parent:WaitForChild("World"):WaitForChild("Gear"))
 
 -- CombatService·MatchStats는 함수 안에서 늦게 require한다.
 -- EnemyFactory가 파티 인원용으로 이 모듈을 require하므로
@@ -418,6 +419,9 @@ local function buildModel(bot, choice, map, spawnAt)
 			offset = Vector3.new(0, 4 + (botNumber - 1) * 1.3, 0),
 		})
 	end
+	-- 직업 장비. CollisionGroup 루프 전에 붙여 장비도 같은 그룹에 넣는다.
+	-- 이름표 높이는 그대로 둔다 (모자가 닿는지 Studio에서 확인 필요).
+	pcall(Gear.equip, model, bot.role)
 	for _, part in ipairs(model:GetDescendants()) do
 		if part:IsA("BasePart") then
 			pcall(function()

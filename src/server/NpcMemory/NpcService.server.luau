@@ -19,85 +19,29 @@ local NpcFolder = script.Parent
 local MemoryStore = require(NpcFolder:WaitForChild("MemoryStore"))
 local NpcSpeech = require(NpcFolder:WaitForChild("NpcSpeech"))
 local Figures = require(NpcFolder.Parent:WaitForChild("World"):WaitForChild("Figures"))
+local Gear = require(NpcFolder.Parent:WaitForChild("World"):WaitForChild("Gear"))
 local Labels = require(NpcFolder.Parent:WaitForChild("World"):WaitForChild("Labels"))
 
--- 사람 모양 장식 (day11c, 기본 파트만. 장식은 몸체의 자식이라 판정에 끼지 않는다).
--- 앞(-Z)이 등불을 본다. NPC 1명당 장식 8개.
-local SKIN = BrickColor.new("Nougat")
+-- NPC 사람 모델 피부·옷 색.
+local NPC_SKIN = Color3.fromRGB(234, 200, 160)
+local BRAM_GRAY = Color3.fromRGB(99, 95, 98)
+local MIRA_WHITE = Color3.fromRGB(245, 245, 245)
 
--- 공통: 머리(살색 공) + 다리 2 + 팔 2.
-local function buildCommon(body, limbColor)
-	local cf = body.CFrame
-	Figures.attach(body, {
-		Name = "Head",
-		Size = Vector3.new(1.6, 1.6, 1.6),
-		Shape = Enum.PartType.Ball,
-		CFrame = cf * CFrame.new(0, 3.3, 0),
-		BrickColor = SKIN,
-	})
-	for _, side in ipairs({ -1, 1 }) do
-		Figures.attach(body, {
-			Name = side < 0 and "LegL" or "LegR",
-			Size = Vector3.new(0.7, 2, 0.5),
-			CFrame = cf * CFrame.new(side * 0.5, -1.4, -1),
-			BrickColor = limbColor,
-		})
-		Figures.attach(body, {
-			Name = side < 0 and "ArmL" or "ArmR",
-			Size = Vector3.new(0.5, 2.2, 0.5),
-			CFrame = cf * CFrame.new(side * 1.25, 0.3, 0),
-			BrickColor = limbColor,
-		})
+local function npcDescription(key)
+	local desc = Instance.new("HumanoidDescription")
+	desc.HeadColor = NPC_SKIN
+	desc.LeftArmColor = NPC_SKIN
+	desc.RightArmColor = NPC_SKIN
+	if key == "bram" then
+		desc.TorsoColor = BRAM_GRAY
+		desc.LeftLegColor = BRAM_GRAY
+		desc.RightLegColor = BRAM_GRAY
+	else
+		desc.TorsoColor = MIRA_WHITE
+		desc.LeftLegColor = MIRA_WHITE
+		desc.RightLegColor = MIRA_WHITE
 	end
-end
-
--- Bram(노장 대장): 금속 갑옷 몸통 + 어깨 보호대 2 + 오른손 검.
-local function buildBram(body)
-	buildCommon(body, BrickColor.new("Dark stone grey"))
-	local cf = body.CFrame
-	for _, side in ipairs({ -1, 1 }) do
-		Figures.attach(body, {
-			Name = side < 0 and "ShoulderL" or "ShoulderR",
-			Size = Vector3.new(1, 0.5, 1.2),
-			CFrame = cf * CFrame.new(side * 1.25, 1.6, 0),
-			Material = Enum.Material.Metal,
-			BrickColor = BrickColor.new("Dark stone grey"),
-		})
-	end
-	Figures.attach(body, {
-		Name = "Sword",
-		Size = Vector3.new(0.25, 3.2, 0.25),
-		CFrame = cf * CFrame.new(1.25, -0.3, -0.3),
-		Material = Enum.Material.Metal,
-		BrickColor = BrickColor.new("Medium stone grey"),
-	})
-end
-
--- Mira(견습 치유사): 흰 로브 몸통 + 초록 망토 + 왼손 지팡이(끝에 초록 공).
-local function buildMira(body)
-	buildCommon(body, BrickColor.new("White"))
-	local cf = body.CFrame
-	Figures.attach(body, {
-		Name = "Cloak",
-		Size = Vector3.new(1.8, 4, 0.3),
-		CFrame = cf * CFrame.new(0, 0, 1.1),
-		BrickColor = BrickColor.new("Dark green"),
-	})
-	Figures.attach(body, {
-		Name = "Staff",
-		Size = Vector3.new(0.25, 4.2, 0.25),
-		CFrame = cf * CFrame.new(-1.25, 0.2, -0.2),
-		Material = Enum.Material.Wood,
-		BrickColor = BrickColor.new("Reddish brown"),
-	})
-	Figures.attach(body, {
-		Name = "StaffTip",
-		Size = Vector3.new(0.6, 0.6, 0.6),
-		Shape = Enum.PartType.Ball,
-		CFrame = cf * CFrame.new(-1.25, 2.5, -0.2),
-		Material = Enum.Material.Neon,
-		BrickColor = BrickColor.new("Bright green"),
-	})
+	return desc
 end
 
 local NPCS = {
@@ -133,8 +77,12 @@ if not npcsFolder then
 end
 for _, npc in ipairs(NPCS) do
 	local name = npc.key == "bram" and "Bram" or "Mira"
-	if not npcsFolder:FindFirstChild(name) then
-		local body = Instance.new("Part")
+	local body = npcsFolder:FindFirstChild(name)
+	if body ~= nil and not body:IsA("BasePart") then
+		continue
+	end
+	if not body then
+		body = Instance.new("Part")
 		body.Name = name
 		body.Size = Vector3.new(2, 5, 2)
 		local pos = lantern.Position + npc.offset - Vector3.new(0, 7.5, 0)
@@ -144,12 +92,51 @@ for _, npc in ipairs(NPCS) do
 		body.BrickColor = BrickColor.new(npc.color)
 		body.Material = npc.material
 		body.Parent = npcsFolder
-		if npc.key == "bram" then
-			buildBram(body)
-		else
-			buildMira(body)
+	end
+	-- 몸체 파트는 이름·위치·크기·Anchored 그대로 두고 투명 + 쿼리 끔.
+	-- 말풍선과 이름표가 이 파트를 쓴다.
+	body.Transparency = 1
+	body.CanQuery = false
+	-- 저장된 place의 예전 장식은 이름표 말고 지운다.
+	for _, child in ipairs(body:GetChildren()) do
+		if child.Name ~= "Nameplate" and (child:IsA("BasePart") or child:IsA("Model")) then
+			child:Destroy()
 		end
-		-- 이름표 중심이 머리 꼭대기(y 6.60)보다 위에 오게 몸체 위 +5.5에 둔다.
+	end
+	-- 같은 자리에 R15 사람 모델을 둔다. 발이 지면에 닿게 높이를 맞추고 등불을 본다.
+	if body:FindFirstChildOfClass("Model") == nil then
+		local ok, model = pcall(function()
+			return Players:CreateHumanoidModelFromDescription(
+				npcDescription(npc.key),
+				Enum.HumanoidRigType.R15
+			)
+		end)
+		if ok and model then
+			for _, part in ipairs(model:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.Anchored = true
+					part.CanCollide = false
+					part.CanQuery = false
+					part.CanTouch = false
+				end
+			end
+			local hum = model:FindFirstChildOfClass("Humanoid")
+			if hum then
+				hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+			end
+			local groundY = body.Position.Y - body.Size.Y / 2
+			local _, bbox = model:GetBoundingBox()
+			local standPos = Vector3.new(body.Position.X, groundY + bbox.Y / 2, body.Position.Z)
+			model:PivotTo(Figures.faceFlatCFrame(standPos, Vector3.new(0, 0, -1), lantern.Position))
+			model.Name = name .. "Avatar"
+			model.Parent = body
+			pcall(Gear.equip, model, npc.key)
+		else
+			warn("[Npc] 사람 모델 생성 실패: " .. name)
+		end
+	end
+	-- 이름표는 몸체 위 +5.5 그대로 둔다 (R15 머리 꼭대기보다 위).
+	if body:FindFirstChild("Nameplate") == nil then
 		Labels.attach(body, body, {
 			text = npc.title,
 			maxDistance = 60,

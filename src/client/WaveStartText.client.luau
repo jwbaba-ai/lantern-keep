@@ -5,6 +5,7 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
 
 local UiScale = require(script.Parent:WaitForChild("UiScale"))
 
@@ -89,8 +90,50 @@ local function show(data)
 	end)
 end
 
-local lastPhase = nil
+-- 투표 결과 창이 떠 있으면 큰 글자를 잠시 미룬다 (NpcBubble의 대사와 같은 방식).
+-- SupportState(JSON)의 announce가 비어 있지 않고 announce_until이 아직이면
+-- 남은 시간 + 0.2초 뒤에 보여 준다. 읽기 실패·값 없음·숫자 아님은 바로 보여 준다.
+-- 미루는 사이에 phase가 wave가 아니게 되면 보여 주지 않는다 (결과 화면에 뜨면 안 된다).
 local state = ReplicatedStorage:WaitForChild("DirectorState")
+
+local function deferShow()
+	local delay = 0
+	pcall(function()
+		local support = ReplicatedStorage:FindFirstChild("SupportState")
+		if support == nil or type(support.Value) ~= "string" or support.Value == "" then
+			return
+		end
+		local data = HttpService:JSONDecode(support.Value)
+		if type(data) ~= "table" then
+			return
+		end
+		if type(data.announce) ~= "string" or data.announce == "" then
+			return
+		end
+		if type(data.announce_until) ~= "number" then
+			return
+		end
+		local remain = data.announce_until - Workspace:GetServerTimeNow()
+		if remain > 0 then
+			delay = remain + 0.2
+		end
+	end)
+	if delay > 0 then
+		task.delay(delay, function()
+			local ok, current = pcall(HttpService.JSONDecode, HttpService, state.Value)
+			if ok and type(current) == "table" and current.phase == "wave" then
+				show(current)
+			end
+		end)
+	else
+		local ok, current = pcall(HttpService.JSONDecode, HttpService, state.Value)
+		if ok and type(current) == "table" and current.phase == "wave" then
+			show(current)
+		end
+	end
+end
+
+local lastPhase = nil
 local function onChanged()
 	local ok, data = pcall(HttpService.JSONDecode, HttpService, state.Value)
 	if not ok or type(data) ~= "table" then
@@ -100,7 +143,7 @@ local function onChanged()
 	local wasWave = lastPhase == "wave"
 	lastPhase = phase
 	if phase == "wave" and not wasWave then
-		show(data)
+		deferShow()
 	end
 end
 state.Changed:Connect(onChanged)

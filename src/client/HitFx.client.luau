@@ -11,6 +11,17 @@ local NUMBER_LIFETIME = 0.6
 local NUMBER_RISE = 3
 local MAX_NUMBERS = 20
 local VISIBLE_RANGE = 80
+-- 처치 폭발: 피해 숫자 20개 제한과 별도로 조각은 동시에 60개까지만 둔다.
+local MAX_SHARDS = 60
+local SHARD_LIFETIME = 0.4
+local SHARD_DIRS = {
+	Vector3.new(1, 0, 0),
+	Vector3.new(-1, 0, 0),
+	Vector3.new(0, 1, 0),
+	Vector3.new(0, -1, 0),
+	Vector3.new(0, 0, 1),
+	Vector3.new(0, 0, -1),
+}
 
 local player = Players.LocalPlayer
 
@@ -20,6 +31,8 @@ local lastHealth = {}
 local originalColors = {}
 -- 화면에 떠 있는 피해 숫자 수.
 local activeNumbers = 0
+-- 화면에 떠 있는 처치 조각 수 (숫자 제한과 별도).
+local activeShards = 0
 
 local function characterRoot()
 	local character = player.Character
@@ -131,6 +144,56 @@ local function showNumber(body, amount, killed)
 	end)
 end
 
+-- 처치 폭발: 적 색의 작은 조각 6개가 사방으로 튀며 사라진다.
+-- 몸체는 클라이언트에서만 0.15초 동안 크기를 줄인다.
+local function killBurst(body)
+	if activeShards + 6 > MAX_SHARDS then
+		return
+	end
+	activeShards += 6
+	local ok, shards = pcall(function()
+		local made = {}
+		local start = body.Position
+		local color = body.Color
+		for _, dir in ipairs(SHARD_DIRS) do
+			local jitter = Vector3.new(
+				math.random() - 0.5,
+				math.random() - 0.5,
+				math.random() - 0.5
+			)
+			local shard = Instance.new("Part")
+			shard.Name = "KillShard"
+			shard.Anchored = true
+			shard.CanCollide = false
+			shard.CanQuery = false
+			shard.CanTouch = false
+			shard.Size = Vector3.new(0.4, 0.4, 0.4)
+			shard.Color = color
+			shard.Position = start
+			shard.Parent = Workspace
+			TweenService:Create(
+				shard,
+				TweenInfo.new(SHARD_LIFETIME, Enum.EasingStyle.Linear),
+				{ Position = start + (dir + jitter) * 3, Transparency = 1 }
+			):Play()
+			table.insert(made, shard)
+		end
+		return made
+	end)
+	if not ok or shards == nil then
+		activeShards = math.max(0, activeShards - 6)
+		return
+	end
+	task.delay(SHARD_LIFETIME + 0.1, function()
+		for _, shard in ipairs(shards) do
+			pcall(function()
+				shard:Destroy()
+			end)
+		end
+		activeShards = math.max(0, activeShards - 6)
+	end)
+end
+
 local function hookEnemy(body)
 	if not body:IsA("BasePart") then
 		return
@@ -150,6 +213,16 @@ local function hookEnemy(body)
 			local amount = math.floor(before - now + 0.5)
 			flash(body)
 			showNumber(body, amount, now <= 0)
+			if now <= 0 then
+				killBurst(body)
+				pcall(function()
+					TweenService:Create(
+						body,
+						TweenInfo.new(0.15, Enum.EasingStyle.Linear),
+						{ Size = body.Size * 0.3 }
+					):Play()
+				end)
+			end
 		end)
 	end)
 end

@@ -6,6 +6,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
+local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -94,6 +95,210 @@ local function flash(fromPos, toPos, color)
 	Debris:AddItem(part, 0.2)
 end
 
+-- 공격 연출용 파트 예산. 동시에 남아 있는 서버 효과 파트는 80개까지만 둔다.
+-- 넘으면 효과를 만들지 않는다 (피해 판정에는 영향 없음).
+local activeFxParts = 0
+local MAX_FX_PARTS = 80
+local function fxClaim(n)
+	if activeFxParts + n > MAX_FX_PARTS then
+		return false
+	end
+	activeFxParts += n
+	return true
+end
+local function fxRelease(n, afterSeconds)
+	task.delay(afterSeconds, function()
+		activeFxParts = math.max(0, activeFxParts - n)
+	end)
+end
+
+-- 효과 파트 공용: 고정 + 사격·이동 판정에 끼지 않음 (공통 규칙 10).
+local function fxPart(props)
+	local p = Instance.new("Part")
+	p.Name = props.Name or "Fx"
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	if props.Shape then
+		p.Shape = props.Shape
+	end
+	if props.Size then
+		p.Size = props.Size
+	end
+	p.Material = props.Material or Enum.Material.Neon
+	if props.Color then
+		p.Color = props.Color
+	elseif props.BrickColor then
+		p.BrickColor = props.BrickColor
+	end
+	if props.Transparency then
+		p.Transparency = props.Transparency
+	end
+	if props.CFrame then
+		p.CFrame = props.CFrame
+	elseif props.Position then
+		p.Position = props.Position
+	end
+	p.Parent = Workspace
+	return p
+end
+
+local function fxDestroy(part, afterSeconds)
+	task.delay(afterSeconds, function()
+		pcall(function()
+			part:Destroy()
+		end)
+	end)
+end
+
+-- ranger: 빛 기둥 대신 화살(노란 Neon)이 날아가고, 맞은 곳에 작은 노란 공이 커지며 사라진다.
+local function rangerFx(origin, hitPos)
+	local dist = (hitPos - origin).Magnitude
+	if dist >= 0.5 and fxClaim(1) then
+		local flight = math.max(dist / 240, 0.05)
+		fxRelease(1, flight + 0.05)
+		pcall(function()
+			local arrow = fxPart({
+				Name = "Arrow",
+				Size = Vector3.new(0.2, 0.2, 2),
+				CFrame = CFrame.lookAt(origin, hitPos),
+				BrickColor = BrickColor.new("Bright yellow"),
+			})
+			TweenService:Create(
+				arrow,
+				TweenInfo.new(flight, Enum.EasingStyle.Linear),
+				{ Position = hitPos }
+			):Play()
+			fxDestroy(arrow, flight + 0.05)
+		end)
+	end
+	if fxClaim(1) then
+		fxRelease(1, 0.2)
+		pcall(function()
+			local ball = fxPart({
+				Name = "HitPop",
+				Shape = Enum.PartType.Ball,
+				Size = Vector3.new(0.5, 0.5, 0.5),
+				Position = hitPos,
+				BrickColor = BrickColor.new("Bright yellow"),
+			})
+			TweenService:Create(
+				ball,
+				TweenInfo.new(0.15),
+				{ Size = Vector3.new(1.5, 1.5, 1.5), Transparency = 1 }
+			):Play()
+			fxDestroy(ball, 0.2)
+		end)
+	end
+end
+
+-- arcanist: 조준점 위 12스터드에서 보라 공이 떨어진 뒤, 보라 공과 바닥 고리가 함께 퍼진다.
+local function arcanistFx(aim, radius)
+	if not fxClaim(3) then
+		return
+	end
+	fxRelease(3, 0.6)
+	pcall(function()
+		local drop = fxPart({
+			Name = "Drop",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.new(1.5, 1.5, 1.5),
+			Position = aim + Vector3.new(0, 12, 0),
+			BrickColor = BrickColor.new("Bright violet"),
+		})
+		TweenService:Create(
+			drop,
+			TweenInfo.new(0.15, Enum.EasingStyle.Linear),
+			{ Position = aim }
+		):Play()
+		fxDestroy(drop, 0.18)
+		task.delay(0.15, function()
+			local dia = math.max(1, radius * 2)
+			local boom = fxPart({
+				Name = "Boom",
+				Shape = Enum.PartType.Ball,
+				Size = Vector3.new(1, 1, 1),
+				Position = aim,
+				BrickColor = BrickColor.new("Bright violet"),
+				Transparency = 0.3,
+			})
+			TweenService:Create(
+				boom,
+				TweenInfo.new(0.35),
+				{ Size = Vector3.new(dia, dia, dia), Transparency = 1 }
+			):Play()
+			fxDestroy(boom, 0.4)
+			local ring = fxPart({
+				Name = "BlastRing",
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(1, 0.2, 1),
+				Position = aim,
+				BrickColor = BrickColor.new("Bright violet"),
+				Transparency = 0.3,
+			})
+			TweenService:Create(
+				ring,
+				TweenInfo.new(0.35),
+				{ Size = Vector3.new(dia, 0.2, dia), Transparency = 1 }
+			):Play()
+			fxDestroy(ring, 0.4)
+		end)
+	end)
+end
+
+-- guardian: 바라보는 방향(수평) ±40도에 주황 Neon 조각 3개를 0.2초 보인다.
+local function guardianFx(rootPos, facing, radius)
+	if not fxClaim(3) then
+		return
+	end
+	fxRelease(3, 0.25)
+	pcall(function()
+		local flat = Vector3.new(facing.X, 0, facing.Z)
+		if flat.Magnitude < 0.01 then
+			flat = Vector3.new(0, 0, -1)
+		end
+		local base = CFrame.lookAt(rootPos, rootPos + flat)
+		for _, ang in ipairs({ -40, 0, 40 }) do
+			local dir = (base * CFrame.Angles(0, math.rad(ang), 0)).LookVector
+			local at = rootPos + dir * radius * 0.6
+			local shard = fxPart({
+				Name = "Slash",
+				Size = Vector3.new(0.4, 0.4, 1.6),
+				CFrame = CFrame.lookAt(at, at + dir),
+				BrickColor = BrickColor.new("Bright orange"),
+			})
+			fxDestroy(shard, 0.2)
+		end
+	end)
+end
+
+-- 치유·근접 고리. feetPos는 발밑 위치.
+local function ringFx(feetPos, color, startDia, endDia, rise, seconds)
+	if not fxClaim(1) then
+		return
+	end
+	fxRelease(1, seconds + 0.05)
+	pcall(function()
+		local ring = fxPart({
+			Name = "Ring",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(startDia, 0.2, startDia),
+			Position = feetPos,
+			Color = color,
+			Transparency = 0.3,
+		})
+		TweenService:Create(
+			ring,
+			TweenInfo.new(seconds),
+			{ Position = feetPos + Vector3.new(0, rise, 0), Transparency = 1 }
+		):Play()
+		fxDestroy(ring, seconds + 0.05)
+	end)
+end
+
 -- 공격자: 플레이어(Player) 또는 지원대 테이블.
 -- { UserId, Character(모델), role 또는 Class 어트리뷰트 }를 가진다.
 -- MatchStats에는 이 값을 그대로 넘긴다.
@@ -117,7 +322,7 @@ local function guardianAttack(attacker, root, _aim, facingOverride)
 			dealDamage(attacker, body, spec.Damage)
 		end
 	end
-	flash(root.Position, root.Position + facing * spec.Radius, BrickColor.new("Bright orange"))
+	guardianFx(root.Position, facing, spec.Radius)
 end
 
 local function rangerAttack(attacker, root, aim)
@@ -139,7 +344,7 @@ local function rangerAttack(attacker, root, aim)
 			dealDamage(attacker, body, spec.Damage)
 		end
 	end
-	flash(origin, hitPos, BrickColor.new("Bright yellow"))
+	rangerFx(origin, hitPos)
 end
 
 local function arcanistAttack(attacker, _root, aim)
@@ -147,7 +352,7 @@ local function arcanistAttack(attacker, _root, aim)
 	for _, body in ipairs(enemiesInRadius(aim, spec.Radius)) do
 		dealDamage(attacker, body, spec.Damage)
 	end
-	flash(aim + Vector3.new(0, spec.Radius, 0), aim, BrickColor.new("Bright violet"))
+	arcanistFx(aim, spec.Radius)
 end
 
 -- 치유 대상: 사람 캐릭터와 지원대 모델 모두.
@@ -183,7 +388,11 @@ local function clericHeal(attacker, root)
 				if char ~= attackerChar and beforePct <= CombatService.ReviveHealthPct and currentTracker then
 					MatchStats.recordRevive(currentTracker, attacker)
 				end
-				flash(root.Position, allyRoot.Position, BrickColor.new("Bright green"))
+				ringFx(
+					allyRoot.Position - Vector3.new(0, 2.5, 0),
+					Color3.fromRGB(60, 220, 90),
+					1.5, 1.5, 3, 0.5
+				)
 			end
 		end
 	end
@@ -195,6 +404,11 @@ local function clericMelee(attacker, root)
 	for _, body in ipairs(enemiesInRadius(root.Position, spec.MeleeRadius)) do
 		dealDamage(attacker, body, spec.AttackDamage)
 	end
+	ringFx(
+		root.Position - Vector3.new(0, 2.5, 0),
+		Color3.new(1, 1, 1),
+		1, spec.MeleeRadius * 2, 0, 0.2
+	)
 end
 
 local function clericAttack(attacker, root, _aim)

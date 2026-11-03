@@ -67,18 +67,10 @@ local function setVisibleLines(bigText, bigColor, smallText)
 	smallLine.Text = smallText
 end
 
-local function show(data)
+local function showLines(bigText, bigColor, smallText)
 	showToken += 1
 	local token = showToken
-	if data.boss == true then
-		setVisibleLines("보스 웨이브", Color3.fromRGB(255, 70, 60), string.format("Day %d", data.day or 1))
-	else
-		setVisibleLines(
-			string.format("웨이브 %d / %d", data.display_wave or 0, data.total_waves or 0),
-			Color3.new(1, 1, 1),
-			string.format("Day %d", data.day or 1)
-		)
-	end
+	setVisibleLines(bigText, bigColor, smallText)
 	TweenService:Create(bigLine, TweenInfo.new(SHOW_SECONDS), { TextTransparency = 0 }):Play()
 	TweenService:Create(smallLine, TweenInfo.new(SHOW_SECONDS), { TextTransparency = 0 }):Play()
 	task.delay(SHOW_SECONDS + HOLD_SECONDS, function()
@@ -88,6 +80,24 @@ local function show(data)
 		TweenService:Create(bigLine, TweenInfo.new(HIDE_SECONDS), { TextTransparency = 1 }):Play()
 		TweenService:Create(smallLine, TweenInfo.new(HIDE_SECONDS), { TextTransparency = 1 }):Play()
 	end)
+end
+
+local function show(data)
+	if data.boss == true then
+		showLines("보스 웨이브", Color3.fromRGB(255, 70, 60), string.format("Day %d", data.day or 1))
+	else
+		showLines(
+			string.format("웨이브 %d / %d", data.display_wave or 0, data.total_waves or 0),
+			Color3.new(1, 1, 1),
+			string.format("Day %d", data.day or 1)
+		)
+	end
+end
+
+-- 웨이브 클리어: 같은 자리·같은 타이밍의 금색 글자.
+-- result(경기 끝)로는 바뀌지 않는다. 결과 화면이 따로 있다.
+local function showClear()
+	showLines("웨이브 클리어!", Color3.fromRGB(255, 200, 60), "")
 end
 
 -- 투표 결과 창이 떠 있으면 큰 글자를 잠시 미룬다 (NpcBubble의 대사와 같은 방식).
@@ -144,6 +154,8 @@ local function onChanged()
 	lastPhase = phase
 	if phase == "wave" and not wasWave then
 		deferShow()
+	elseif wasWave and phase == "intermission" then
+		showClear()
 	end
 end
 state.Changed:Connect(onChanged)

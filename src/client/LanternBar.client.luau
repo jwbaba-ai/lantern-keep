@@ -3,6 +3,7 @@
 -- 30% 이하면 붉게 깜빡인다.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
@@ -59,6 +60,51 @@ local function flashRed()
 		if token == flashToken then
 			flashFrame.Visible = false
 		end
+	end)
+end
+
+-- 등불 피해 흔들림: 붉은 프레임과 함께 카메라를 0.2초 동안 0.3스터드 안으로 흔든다.
+-- Camera.CFrame을 덮어쓰지 않고 매 프레임 적용한 오프셋을 빼고 다음 오프셋을 더한다.
+-- 흔들림이 끝나면 마지막 오프셋을 빼고 연결을 끊는다 (위치가 남지 않는다).
+-- 진행 중에 또 맞으면 처음부터 다시 시작한다.
+local SHAKE_SECONDS = 0.2
+local SHAKE_RANGE = 0.3
+local shakeToken = 0
+local shakeConn = nil
+local shakeOffset = Vector3.zero
+local function endShake()
+	if shakeConn then
+		shakeConn:Disconnect()
+		shakeConn = nil
+	end
+	local camera = Workspace.CurrentCamera
+	if camera and shakeOffset ~= Vector3.zero then
+		camera.CFrame = camera.CFrame * CFrame.new(-shakeOffset)
+	end
+	shakeOffset = Vector3.zero
+end
+local function shakeCamera()
+	shakeToken += 1
+	local token = shakeToken
+	endShake()
+	local startedAt = os.clock()
+	shakeConn = RunService:BindToRenderStep("LanternDamageShake", Enum.RenderPriority.Camera.Value + 1, function()
+		local camera = Workspace.CurrentCamera
+		if token ~= shakeToken or camera == nil then
+			endShake()
+			return
+		end
+		if os.clock() - startedAt >= SHAKE_SECONDS then
+			endShake()
+			return
+		end
+		camera.CFrame = camera.CFrame * CFrame.new(-shakeOffset)
+		shakeOffset = Vector3.new(
+			(math.random() * 2 - 1) * SHAKE_RANGE,
+			(math.random() * 2 - 1) * SHAKE_RANGE,
+			0
+		)
+		camera.CFrame = camera.CFrame * CFrame.new(shakeOffset)
 	end)
 end
 
@@ -142,6 +188,7 @@ local function render()
 	local hp = lantern:GetAttribute("Health") or MAX_HEALTH
 	if lastHp ~= nil and hp < lastHp then
 		flashRed()
+		shakeCamera()
 	end
 	lastHp = hp
 	local pct = math.clamp(hp / MAX_HEALTH, 0, 1)

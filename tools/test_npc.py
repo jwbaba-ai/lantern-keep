@@ -11,7 +11,7 @@ from jsonschema import validate
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL = os.environ.get("NPC_MODEL", os.environ.get("DIRECTOR_MODEL", "muse-spark-1.3"))
-EFFORT = os.environ.get("DIRECTOR_EFFORT", "low")
+EFFORT = os.environ.get("NPC_EFFORT", "minimal")
 
 def load(rel):
     with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
@@ -56,6 +56,7 @@ def main(paths):
             res = client.chat.completions.create(
                 model=MODEL,
                 reasoning_effort=EFFORT,
+                max_completion_tokens=4000,
                 messages=[{"role": "system", "content": prompt},
                           {"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
                 response_format={"type": "json_schema",

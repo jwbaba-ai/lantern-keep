@@ -234,15 +234,15 @@ local function arcanistFx(aim, radius)
 			local ring = fxPart({
 				Name = "BlastRing",
 				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(1, 0.2, 1),
-				Position = aim,
+				Size = Vector3.new(0.2, 1, 1),
+				CFrame = CFrame.new(aim) * CFrame.Angles(0, 0, math.rad(90)),
 				BrickColor = BrickColor.new("Bright violet"),
 				Transparency = 0.3,
 			})
 			TweenService:Create(
 				ring,
 				TweenInfo.new(0.35),
-				{ Size = Vector3.new(dia, 0.2, dia), Transparency = 1 }
+				{ Size = Vector3.new(0.2, dia, dia), Transparency = 1 }
 			):Play()
 			fxDestroy(ring, 0.4)
 		end)
@@ -285,15 +285,15 @@ local function ringFx(feetPos, color, startDia, endDia, rise, seconds)
 		local ring = fxPart({
 			Name = "Ring",
 			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(startDia, 0.2, startDia),
-			Position = feetPos,
+			Size = Vector3.new(0.2, startDia, startDia),
+			CFrame = CFrame.new(feetPos) * CFrame.Angles(0, 0, math.rad(90)),
 			Color = color,
 			Transparency = 0.3,
 		})
 		TweenService:Create(
 			ring,
 			TweenInfo.new(seconds),
-			{ Position = feetPos + Vector3.new(0, rise, 0), Transparency = 1 }
+			{ CFrame = CFrame.new(feetPos + Vector3.new(0, rise, 0)) * CFrame.Angles(0, 0, math.rad(90)), Transparency = 1 }
 		):Play()
 		fxDestroy(ring, seconds + 0.05)
 	end)

@@ -40,8 +40,8 @@ function builders.guardian(model)
 		local hx, hy, hz = head.Size.X, head.Size.Y, head.Size.Z
 		add(head, {
 			Name = "Helm", Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(hx * 1.15, 0.3, hz * 1.15),
-			Offset = CFrame.new(0, hy / 2 + 0.1, 0),
+			Size = Vector3.new(0.3, hx * 1.15, hz * 1.15),
+			Offset = CFrame.new(0, hy / 2 + 0.1, 0) * CFrame.Angles(0, 0, math.rad(90)),
 			Material = Enum.Material.Metal, BrickColor = METAL_DARK,
 		})
 		add(head, {
@@ -67,14 +67,14 @@ function builders.guardian(model)
 		local hx = handL.Size.X
 		add(handL, {
 			Name = "ShieldRim", Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(1.8, 0.15, 1.8),
-			Offset = CFrame.new(-(hx / 2 + 0.3), 0, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Size = Vector3.new(0.15, 1.8, 1.8),
+			Offset = CFrame.new(-(hx / 2 + 0.3), 0, 0),
 			BrickColor = BrickColor.new("Bright blue"),
 		})
 		add(handL, {
 			Name = "Shield", Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(1.6, 0.25, 1.6),
-			Offset = CFrame.new(-(hx / 2 + 0.2), 0, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Size = Vector3.new(0.25, 1.6, 1.6),
+			Offset = CFrame.new(-(hx / 2 + 0.2), 0, 0),
 			Material = Enum.Material.Metal, BrickColor = METAL_LIGHT,
 		})
 	end
@@ -109,8 +109,8 @@ function builders.ranger(model)
 		local tz = torso.Size.Z
 		add(torso, {
 			Name = "Quiver", Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(0.6, 1.8, 0.6),
-			Offset = CFrame.new(0.5, 0.2, -(tz / 2 + 0.3)),
+			Size = Vector3.new(1.8, 0.6, 0.6),
+			Offset = CFrame.new(0.5, 0.2, -(tz / 2 + 0.3)) * CFrame.Angles(0, 0, math.rad(90)),
 			BrickColor = WOOD,
 		})
 		for _, dx in ipairs({ -0.2, 0, 0.2 }) do
@@ -188,8 +188,8 @@ function builders.arcanist(model)
 		local hy = head.Size.Y
 		add(head, {
 			Name = "HatBrim", Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(2.2, 0.2, 2.2),
-			Offset = CFrame.new(0, hy / 2 + 0.1, 0),
+			Size = Vector3.new(0.2, 2.2, 2.2),
+			Offset = CFrame.new(0, hy / 2 + 0.1, 0) * CFrame.Angles(0, 0, math.rad(90)),
 			BrickColor = BrickColor.new("Bright violet"),
 		})
 		add(head, {

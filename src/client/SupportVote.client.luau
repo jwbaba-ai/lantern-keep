@@ -146,6 +146,17 @@ local function render()
 			counts.none or 0
 		)
 		announceLine.Text = ""
+		-- 2판째부터 이미 투표한 사람은 투표 창을 보이지 않는다 (0.4초 번쩍임 방지).
+		-- 첫 판, 아직 투표하지 않은 사람(새로 들어온 사람 포함)에게는 그대로 보인다.
+		local matchNumber = ReplicatedStorage:GetAttribute("MatchNumber")
+		if type(matchNumber) == "number" and matchNumber >= 2 then
+			for _, entry in ipairs(support.votes or {}) do
+				if entry.userId == player.UserId or entry.name == player.DisplayName then
+					frame.Visible = false
+					return
+				end
+			end
+		end
 		-- 직업을 고른 뒤에만 보인다.
 		frame.Visible = hasClass
 		return

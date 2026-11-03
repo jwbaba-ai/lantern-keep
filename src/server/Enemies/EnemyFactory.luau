@@ -189,7 +189,17 @@ function EnemyFactory.spawn(enemyType, lane, waypoints, lantern, onResolved, mod
 		if onResolved then
 			task.spawn(onResolved, enemyType, lane, how)
 		end
-		body:Destroy()
+		-- 처치(killed)면 0.15초 뒤에 지운다. Health 0 변경이 클라이언트에
+		-- 복제되기 전에 파트가 사라지면 마지막 타격의 숫자·반짝임이 안 보인다.
+		-- 0.15초 동안 사격을 막지 않게 CanQuery만 끈다. 도착(arrived) 적은 바로 지운다.
+		if how == "killed" then
+			body.CanQuery = false
+			task.delay(0.15, function()
+				body:Destroy()
+			end)
+		else
+			body:Destroy()
+		end
 	end
 	active[body] = { resolve = resolve, spec = spec }
 

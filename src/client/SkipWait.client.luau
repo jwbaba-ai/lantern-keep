@@ -6,11 +6,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local UiScale = require(script.Parent:WaitForChild("UiScale"))
 
--- 화면 오른쪽 아래, 휴대폰 점프 버튼 왼쪽 위(점프 버튼을 가리지 않게).
+-- 화면 아래쪽, 휴대폰 점프 버튼 왼쪽(점프 버튼을 가리지 않게).
+-- 842×390 측정에서 대화창(y 110~212) 안에 들어가 뒤에 가려지던 자리에서 내렸다.
 local BUTTON_W = 140
 local BUTTON_H = 44
-local OFFSET_X = -210
-local OFFSET_Y = -130
+local OFFSET_X = -115
+local OFFSET_Y = -12
 
 local player = Players.LocalPlayer
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -19,6 +20,8 @@ local skipEvent = remotes:WaitForChild("SkipWait")
 local gui = Instance.new("ScreenGui")
 gui.Name = "SkipWait"
 gui.ResetOnSpawn = false
+-- NPC 대화창(기본 순서 0)보다 위에, 직업 선택 창(10)보다는 낮게 그린다.
+gui.DisplayOrder = 5
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local button = Instance.new("TextButton")

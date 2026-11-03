@@ -29,6 +29,7 @@ local EventEffects = require(DirectorFolder:WaitForChild("EventEffects"))
 local DirectorClient = require(DirectorFolder:WaitForChild("DirectorClient"))
 local WaveValidator = require(DirectorFolder:WaitForChild("WaveValidator"))
 local DirectorState = require(DirectorFolder:WaitForChild("DirectorState"))
+local SkipVote = require(DirectorFolder:WaitForChild("SkipVote"))
 local DayRules = require(DirectorFolder:WaitForChild("DayRules"))
 local PartyScale = require(DirectorFolder:WaitForChild("PartyScale"))
 local MatchStats = require(DirectorFolder:WaitForChild("MatchStats"))
@@ -138,6 +139,117 @@ end
 local function clearFastMatch()
 	ReplicatedStorage:SetAttribute("DebugFastMatch", false)
 end
+
+-- 대기 건너뛰기 (단일 기준: docs/tasks/day14g.md 2단계).
+-- 웨이브 사이 대기·결과 화면에서만 연다. 표는 서버 지역 테이블에 둔다.
+-- 건너뛰기 코드가 실패해도 경기는 멈추지 않는다(정해진 시간만큼 기다린다).
+local SKIP_MIN_SECONDS = 3 -- 열린 뒤 최소 대기(배너·성문 미리보기를 볼 시간)
+local skipVotes = {} -- [userId] = true
+local skipOpen = false
+
+local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+if not remotes then
+	remotes = Instance.new("Folder")
+	remotes.Name = "Remotes"
+	remotes.Parent = ReplicatedStorage
+end
+local skipEvent = remotes:FindFirstChild("SkipWait")
+if not skipEvent then
+	skipEvent = Instance.new("RemoteEvent")
+	skipEvent.Name = "SkipWait"
+	skipEvent.Parent = remotes
+end
+
+ReplicatedStorage:SetAttribute("SkipOpen", false)
+ReplicatedStorage:SetAttribute("SkipVotes", 0)
+ReplicatedStorage:SetAttribute("SkipNeeded", 0)
+
+-- 나간 사람 표는 세지 않는다. excludeUserId는 PlayerRemoving 시점에 쓴다.
+local function skipPlayerCount(excludeUserId)
+	local n = 0
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player.UserId ~= excludeUserId then
+			n += 1
+		end
+	end
+	return n
+end
+
+local function skipVoteCount(excludeUserId)
+	local n = 0
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player.UserId ~= excludeUserId and skipVotes[player.UserId] then
+			n += 1
+		end
+	end
+	return n
+end
+
+local function publishSkip(excludeUserId)
+	local ok, err = pcall(function()
+		ReplicatedStorage:SetAttribute("SkipVotes", skipVoteCount(excludeUserId))
+		ReplicatedStorage:SetAttribute("SkipNeeded", SkipVote.needed(skipPlayerCount(excludeUserId)))
+	end)
+	if not ok then
+		warn("[Director] skip publish failed: " .. tostring(err))
+	end
+end
+
+-- 열 때와 루프를 나갈 때 모두 표를 비운다. 웨이브 중·로비에서는 열지 않는다.
+local function setSkipOpen(open)
+	skipVotes = {}
+	skipOpen = open
+	local ok, err = pcall(function()
+		ReplicatedStorage:SetAttribute("SkipOpen", open)
+	end)
+	if not ok then
+		warn("[Director] skip open failed: " .. tostring(err))
+	end
+	publishSkip(nil)
+end
+
+-- 통과면 true. 실패하면 false(정해진 시간만큼 기다린다).
+local function skipPassed()
+	local ok, passed = pcall(function()
+		return SkipVote.passed(skipVoteCount(nil), skipPlayerCount(nil))
+	end)
+	if not ok then
+		warn("[Director] skip check failed: " .. tostring(passed))
+		return false
+	end
+	return passed
+end
+
+-- 클라이언트가 인자 없이 보내면 그 플레이어의 표를 켜고 끈다(토글).
+skipEvent.OnServerEvent:Connect(function(player)
+	if not skipOpen then
+		return
+	end
+	local ok, err = pcall(function()
+		if skipVotes[player.UserId] then
+			skipVotes[player.UserId] = nil
+		else
+			skipVotes[player.UserId] = true
+		end
+		publishSkip(nil)
+	end)
+	if not ok then
+		warn("[Director] skip vote failed: " .. tostring(err))
+	end
+end)
+
+Players.PlayerAdded:Connect(function()
+	if skipOpen then
+		publishSkip(nil)
+	end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	skipVotes[player.UserId] = nil
+	if skipOpen then
+		publishSkip(player.UserId)
+	end
+end)
 
 local function getWaypoints(map, lane)
 	local folder = map:WaitForChild("Lanes"):WaitForChild(lane)
@@ -636,15 +748,31 @@ local function runMatch(matchNumber, day)
 			DirectorState.lanesOf(previewPlan),
 			previewOrder[1] and previewOrder[1].lane or nil
 		)
-		local restLeft = rest
+		-- 디렉터 응답(또는 대체 웨이브) 확정 뒤에만 건너뛰기를 연다.
+	-- 디렉터 요청 자체는 기다린다(건너뛰기 때문에 대체 웨이브가 되면 안 된다).
+	if rest > 0 then
+		setSkipOpen(true)
+	end
+	local skipElapsed = 0
+	local restLeft = rest
 		while restLeft > 0 do
 			if fastMatchRequested() then
+				break
+			end
+			if skipElapsed >= SKIP_MIN_SECONDS and skipPassed() then
+				print(string.format(
+					"[Director] skip wait phase=intermission votes=%d/%d",
+					skipVoteCount(nil),
+					SkipVote.needed(skipPlayerCount(nil))
+				))
 				break
 			end
 			local step = math.min(0.5, restLeft)
 			task.wait(step)
 			restLeft -= step
+			skipElapsed += step
 		end
+		setSkipOpen(false)
 	end
 
 	-- NPC 기억: 이번 경기 기록을 저장하고 다음 판 대사를 미리 받아 둔다.
@@ -742,7 +870,27 @@ local function runMatch(matchNumber, day)
 	-- 3. 결과 화면을 MatchRestartSeconds초 보여 준다. 저장이 더 오래 걸리면 그만큼 늦게 시작한다.
 	local restartSeconds = Config.MatchRestartSeconds or 15
 	publishResult(day, totalWaves, wavesCompleted, currentSource, result, intermissionEndsAt(restartSeconds), npcMemory)
-	task.wait(restartSeconds)
+	-- 기억 요약·저장이 끝난 뒤이므로 건너뛰기를 열어도 된다.
+	if restartSeconds > 0 then
+		setSkipOpen(true)
+	end
+	local resultElapsed = 0
+	local resultLeft = restartSeconds
+	while resultLeft > 0 do
+		if resultElapsed >= SKIP_MIN_SECONDS and skipPassed() then
+			print(string.format(
+				"[Director] skip wait phase=result votes=%d/%d",
+				skipVoteCount(nil),
+				SkipVote.needed(skipPlayerCount(nil))
+			))
+			break
+		end
+		local step = math.min(0.25, resultLeft)
+		task.wait(step)
+		resultLeft -= step
+		resultElapsed += step
+	end
+	setSkipOpen(false)
 	-- 4. 다음 판 초기화. 직업은 유지한다.
 	resetForNextMatch()
 	return result

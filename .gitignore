@@ -16,3 +16,7 @@ generated_images/
 
 # 사람 휴대폰 녹화 영상 (저장소에 올리지 않음)
 docs/devlog/video/
+
+# 촬영 원본 영상은 저장소에 넣지 않는다
+vedios/
+videos/

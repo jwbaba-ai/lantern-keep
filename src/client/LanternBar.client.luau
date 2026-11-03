@@ -70,13 +70,9 @@ end
 local SHAKE_SECONDS = 0.2
 local SHAKE_RANGE = 0.3
 local shakeToken = 0
-local shakeConn = nil
 local shakeOffset = Vector3.zero
 local function endShake()
-	if shakeConn then
-		shakeConn:Disconnect()
-		shakeConn = nil
-	end
+	pcall(RunService.UnbindFromRenderStep, RunService, "LanternDamageShake")
 	local camera = Workspace.CurrentCamera
 	if camera and shakeOffset ~= Vector3.zero then
 		camera.CFrame = camera.CFrame * CFrame.new(-shakeOffset)
@@ -88,7 +84,7 @@ local function shakeCamera()
 	local token = shakeToken
 	endShake()
 	local startedAt = os.clock()
-	shakeConn = RunService:BindToRenderStep("LanternDamageShake", Enum.RenderPriority.Camera.Value + 1, function()
+	RunService:BindToRenderStep("LanternDamageShake", Enum.RenderPriority.Camera.Value + 1, function()
 		local camera = Workspace.CurrentCamera
 		if token ~= shakeToken or camera == nil then
 			endShake()

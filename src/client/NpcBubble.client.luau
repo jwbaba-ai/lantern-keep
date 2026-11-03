@@ -268,7 +268,9 @@ npcSay.OnClientEvent:Connect(function(payload)
 	-- 투표 결과 창이 떠 있으면 대사를 잠시 미룬다(SupportVote.client는 고치지 않는다).
 	-- SupportState(JSON)의 announce가 비어 있지 않고 announce_until이 아직이면
 	-- 남은 시간 + 0.5초 뒤에 보여 준다. 읽기 실패·값 없음·숫자 아님은 바로 보여 준다.
-	local delay = 0
+	-- 웨이브 시작 큰 글자(WaveStartText)가 보이는 동안도 겹치지 않게 미룬다.
+	-- 두 미룸 중 늦은 쪽을 쓴다. 머리 위 "…" 표시는 그대로 함께 미뤄진다.
+	local voteDelay = 0
 	pcall(function()
 		local state = ReplicatedStorage:FindFirstChild("SupportState")
 		if state == nil or type(state.Value) ~= "string" or state.Value == "" then
@@ -286,9 +288,21 @@ npcSay.OnClientEvent:Connect(function(payload)
 		end
 		local remain = data.announce_until - Workspace:GetServerTimeNow()
 		if remain > 0 then
-			delay = remain + 0.5
+			voteDelay = remain + 0.5
 		end
 	end)
+	local textDelay = 0
+	pcall(function()
+		local untilAt = player:GetAttribute("WaveTextUntil")
+		if type(untilAt) ~= "number" then
+			return
+		end
+		local remain = untilAt - Workspace:GetServerTimeNow()
+		if remain > 0 then
+			textDelay = remain + 0.1
+		end
+	end)
+	local delay = math.max(voteDelay, textDelay)
 	if delay > 0 then
 		task.delay(delay, function()
 			showDialog(payload.npc, payload.text, payload.isAI == true)

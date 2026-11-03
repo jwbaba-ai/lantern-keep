@@ -70,6 +70,8 @@ end
 local function showLines(bigText, bigColor, smallText)
 	showToken += 1
 	local token = showToken
+	-- 큰 글자가 보이는 동안(NpcBubble 대화창이 겹치지 않게) 끝나는 시각을 알린다.
+	player:SetAttribute("WaveTextUntil", Workspace:GetServerTimeNow() + SHOW_SECONDS + HOLD_SECONDS + HIDE_SECONDS)
 	setVisibleLines(bigText, bigColor, smallText)
 	TweenService:Create(bigLine, TweenInfo.new(SHOW_SECONDS), { TextTransparency = 0 }):Play()
 	TweenService:Create(smallLine, TweenInfo.new(SHOW_SECONDS), { TextTransparency = 0 }):Play()

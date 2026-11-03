@@ -83,6 +83,8 @@ local function flash(fromPos, toPos, color)
 	local part = Instance.new("Part")
 	part.Anchored = true
 	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
 	part.Material = Enum.Material.Neon
 	part.BrickColor = color
 	part.Size = Vector3.new(0.4, 0.4, offset.Magnitude)
